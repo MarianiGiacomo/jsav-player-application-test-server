@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Visual Algorithm Simulatin Player</title>
+  <link rel="stylesheet" href="../css/JSAV.css" type="text/css" />
+  <link rel="stylesheet" href="./player.css" type="text/css" />
+  <script src="../lib/jquery.min.js"></script>
+  <script src="../lib/jquery-ui.min.js"></script>
+  <script src="../lib/jquery.transit.js"></script>
+  <script src="../lib/raphael.js"></script>
+  <script src="../lib/JSAV-min.js"></script>
+  <script src="./player-bundle.js"></script>
+</head>
+<body>
+  <div class="player-content">
+    <div class="auto-animation">
+      <button id="play-button">Play</button>
+      <button id="pause-button">Pause</button>
+      <button id="stop-button">Stop</button>
+    </div>
+    <div class="import-export">
+      <button id="settings">Animation Speed</button>
+      <button>Import Animation</button>
+      <button>Export Animation</button>
+    </div>
+    <div class="animation-instructions">
+      <p>Click the <b>arrows</b> buttons or use your <b>keyboard</b> to step through the animation</p>
+      <p><b>Key right = forward</b> | <b>key back = backward</b> | <b>Key up = begin</b> | <b>key down = end</b></p>
+    </div>
+  </div>
+  <div id="jsavcontainer">
+    <div class="jsavcontrols"></div>
+    <div class="instructions-div">
+      <p class="instructLabel">Instructions:</p>
+      <p class="instructions" id="exercise-instructions"></p>
+    </div>
+    <div class="final-grade" id="final-grade">
+      <b>Final Score:</b>
+      <div id="scores"></div>
+    </div>
+    <p class="jsavoutput jsavline"></p>
+  </div>
+  <div class="model-solution">
+    <h3>Here will be shown the model solution steps if they are present in the animation</h3>
+    <div id="model-solution"></div>
+  </div>
+</body>
+</html>

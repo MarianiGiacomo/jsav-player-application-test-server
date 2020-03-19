@@ -1,0 +1,43 @@
+#jsavcontainer {
+  height: max-content;
+  border: khaki 2px solid;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.jsavline {
+  height: 38px;
+}
+.jsavcanvas {
+  min-height: 150px;
+  margin: 5px;
+}
+.import-export, .final-grade, .jsavoutput, .play, .animation-instructions,
+.model-solution, .auto-animation  {
+  text-align: center;
+  margin: 2px;
+}
+.jsavoutput .jsavtitle {
+  margin: 5px;
+}
+.jsavtitle {
+  margin-bottom: 10px !important;
+  font-size: xx-large !important;
+}
+.instructions-div {
+  margin: 2px 20%;
+  background-color: lightblue;
+  padding: 1px 10px;
+  border-radius: 5px;
+}
+button {
+  margin: 0.5%;
+}
+p {
+  margin: 5px !important;
+}
+#model-solution path {
+display: none;
+}
+.no-data {
+  text-align: center;
+}
