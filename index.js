@@ -6,6 +6,7 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const cors = require("cors");
+const redirect = require("express-redirect");
 
 /**
  * App Variables
@@ -20,10 +21,13 @@ app.use(cors())
 app.use(express.static('public'))
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+redirect(app);
 
 /**
  * Routes Definitions
  */
+app.redirect("/exercises/:exercise(.*)", "/", "post")
+
 app.get("/", (req, res) => {
   fs.readFile("index.html", function(err, data){
   res.writeHead(200, {'Content-Type': 'text/html'});
@@ -95,9 +99,12 @@ app.get('/redirect', (req, res) => {
   res.redirect("/jsav-player/player.html?submission=" + submission)
 });
 
-app.post("/jsav-player", (req, res) => {
-  const submission = req.body.submission
-  res.redirect("/jsav-player/player.html" + "?submission=2")
+app.post("/", (req, res) => {
+  const submission = req.body.submission;
+  res.append('<META name="status" value="accepted" />');
+  res.append(`<META name="points" value="${submission.definitions.correct}" />`);
+  res.append(`<META name="max-points" value="${req.query.max_points}" />`);
+  res.redirect(`/jsav-player/player.html?submission=${submission}`);
 })
 
 /**
