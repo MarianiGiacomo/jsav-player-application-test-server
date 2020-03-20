@@ -1,13 +1,4 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const EXEC_ENV = 'STATIC';
-const SUBMISSION_URL = 'http://localhost:3000/submissions';
-
-module.exports = {
-  EXEC_ENV,
-  SUBMISSION_URL
-}
-
-},{}],2:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function handleArrayEvents(eventData) {
@@ -150,7 +141,7 @@ module.exports = {
   handleModelSolution,
 }
 
-},{"../submission/submission":36}],3:[function(require,module,exports){
+},{"../submission/submission":35}],2:[function(require,module,exports){
 const helpers = require('../utils/helperFunctions');
 const submission = require('../submission/submission');
 
@@ -216,7 +207,7 @@ module.exports = {
   setFinalGrade,
 }
 
-},{"../submission/submission":36,"../utils/helperFunctions":38}],4:[function(require,module,exports){
+},{"../submission/submission":35,"../utils/helperFunctions":37}],3:[function(require,module,exports){
 function customError(message) {
   const error = new Error(message);
   console.warn(error);
@@ -227,18 +218,30 @@ module.exports = {
   customError,
 }
 
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 const submission = require('./submission/submission');
 const metad_func = require('./metadata/metadata');
 const def_func = require('./definitions/definitions');
 const init_state_func = require('./initialState/initialState');
 const anim_func = require('./animation/animation');
 const services = require('./rest/services');
-const env = require('./.env.js');
-let $;
+// const env = require('./.env.js');
+// let $;
+let jsav = {};
+let exercise = {};
+// LMS defines: used if grading asynchronously
+let submission_url;
+// LMS defines: where to post the submission
+let post_url;
+
+initialize();
+setEventOnWindowClose();
 
 function initialize() {
-  $ = window.$
+  setSubmissionAndPostUrl();
+  submission.reset();
+  metad_func.setExerciseMetadata(getMetadataFromURLparams())
+  // $ = window.$
   try {
     $(document).off("jsav-log-event");
     $(document).on("jsav-log-event",  function (event, eventData) {
@@ -250,13 +253,9 @@ function initialize() {
   }
 }
 
-let jsav = {};
-let exercise = {};
-
 function passEvent(eventData) {
   switch(eventData.type){
     case 'jsav-init':
-      submission.reset();
       def_func.setExerciseOptions(eventData);
       metad_func.setExerciseMetadata(eventData);
       break;
@@ -285,7 +284,7 @@ function passEvent(eventData) {
       // We remove it because JSAV logs automatically the model solution when grading
       submission.checkAndFixLastAnimationStep();
       anim_func.handleGradeButtonClick(eventData);
-      def_func.setFinalGrade(eventData) && services.sendSubmission(submission.state(), env.SUBMISSION_URL);
+      def_func.setFinalGrade(eventData) && services.sendSubmission(submission.state(), post_url);
       submission.reset();
       $(document).off("jsav-log-event");
       break;
@@ -300,6 +299,26 @@ function passEvent(eventData) {
   }
 }
 
+// According to https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
+function setSubmissionAndPostUrl() {
+  // LMS submission url
+  submission_url = new URL(location.href).searchParams.get('submission_url');
+  // url where the LMS posts submission data
+  post_url = new URL(location.href).searchParams.get('post_url');
+}
+
+// According to https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
+function getMetadataFromURLparams() {
+  // set in LMS
+  const max_points = new URL(location.href).searchParams.get('max_points');
+  // User identifier
+  const uid = new URL(location.href).searchParams.get('uid');
+  // Ordinal number of the submission which has not yet been done
+  const ordinal_number = new URL(location.href).searchParams.get('ordinal_number');
+  return { max_points, uid, ordinal_number };
+}
+
+
 function setEventOnWindowClose() {
   window.addEventListener('beforeunload', (event) => {
     // Cancel the event as stated by the standard.
@@ -309,12 +328,6 @@ function setEventOnWindowClose() {
   });
 }
 
-function setEventOnHashChange() {
-  window.addEventListener('hashchange', function() {
-    console.log('The hash has changed!')
-  }, false);
-}
-
 function detach() {
   $(document).off("jsav-log-event");
 }
@@ -322,13 +335,14 @@ function detach() {
 window.initializeRecorder = initialize;
 window.detachRecorder = detach;
 
-if(env.EXEC_ENV === 'STATIC') {
-  initialize();
-  setEventOnWindowClose();
-}
-else if (env.EXEC_ENV === 'DYNAMIC') {
-  setEventOnHashChange();
-}
+
+// if(env.EXEC_ENV === 'STATIC') {
+//   initialize();
+//   setEventOnWindowClose();
+// }
+// else if (env.EXEC_ENV === 'STATIC') {
+//   setEventOnHashChange();
+// }
 
 
 
@@ -344,7 +358,7 @@ module.exports = {
 //
 // export default recorder;
 
-},{"./.env.js":1,"./animation/animation":2,"./definitions/definitions":3,"./initialState/initialState":6,"./metadata/metadata":7,"./rest/services":34,"./submission/submission":36}],6:[function(require,module,exports){
+},{"./animation/animation":1,"./definitions/definitions":2,"./initialState/initialState":5,"./metadata/metadata":6,"./rest/services":33,"./submission/submission":35}],5:[function(require,module,exports){
 const recorder = require("../exerciseRecorder.js")
 const error_handler = require('../errors/errors');
 const submission = require('../submission/submission');
@@ -429,21 +443,21 @@ module.exports = {
   setNewId,
 }
 
-},{"../errors/errors":4,"../exerciseRecorder.js":5,"../submission/submission":36}],7:[function(require,module,exports){
-function setExerciseMetadata(exercise) {
-  const metadata = [];
-  // TODO: implement setExerciseMetadata(exercise)
-  return metadata;
-}
+},{"../errors/errors":3,"../exerciseRecorder.js":4,"../submission/submission":35}],6:[function(require,module,exports){
+const submission = require('../submission/submission');
+
+function setExerciseMetadata(metadata) {
+  return submission.addMetadata(metadata);
+  }
 
 
 module.exports = {
   setExerciseMetadata
 }
 
-},{}],8:[function(require,module,exports){
+},{"../submission/submission":35}],7:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":10}],9:[function(require,module,exports){
+},{"./lib/axios":9}],8:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -625,7 +639,7 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-},{"../core/buildFullPath":16,"../core/createError":17,"./../core/settle":21,"./../helpers/buildURL":25,"./../helpers/cookies":27,"./../helpers/isURLSameOrigin":29,"./../helpers/parseHeaders":31,"./../utils":33}],10:[function(require,module,exports){
+},{"../core/buildFullPath":15,"../core/createError":16,"./../core/settle":20,"./../helpers/buildURL":24,"./../helpers/cookies":26,"./../helpers/isURLSameOrigin":28,"./../helpers/parseHeaders":30,"./../utils":32}],9:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -680,7 +694,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":11,"./cancel/CancelToken":12,"./cancel/isCancel":13,"./core/Axios":14,"./core/mergeConfig":20,"./defaults":23,"./helpers/bind":24,"./helpers/spread":32,"./utils":33}],11:[function(require,module,exports){
+},{"./cancel/Cancel":10,"./cancel/CancelToken":11,"./cancel/isCancel":12,"./core/Axios":13,"./core/mergeConfig":19,"./defaults":22,"./helpers/bind":23,"./helpers/spread":31,"./utils":32}],10:[function(require,module,exports){
 'use strict';
 
 /**
@@ -701,7 +715,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -760,14 +774,14 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":11}],13:[function(require,module,exports){
+},{"./Cancel":10}],12:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -863,7 +877,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"../helpers/buildURL":25,"./../utils":33,"./InterceptorManager":15,"./dispatchRequest":18,"./mergeConfig":20}],15:[function(require,module,exports){
+},{"../helpers/buildURL":24,"./../utils":32,"./InterceptorManager":14,"./dispatchRequest":17,"./mergeConfig":19}],14:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -917,7 +931,7 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":33}],16:[function(require,module,exports){
+},{"./../utils":32}],15:[function(require,module,exports){
 'use strict';
 
 var isAbsoluteURL = require('../helpers/isAbsoluteURL');
@@ -939,7 +953,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
   return requestedURL;
 };
 
-},{"../helpers/combineURLs":26,"../helpers/isAbsoluteURL":28}],17:[function(require,module,exports){
+},{"../helpers/combineURLs":25,"../helpers/isAbsoluteURL":27}],16:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -959,7 +973,7 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":19}],18:[function(require,module,exports){
+},{"./enhanceError":18}],17:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1040,7 +1054,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":13,"../defaults":23,"./../utils":33,"./transformData":22}],19:[function(require,module,exports){
+},{"../cancel/isCancel":12,"../defaults":22,"./../utils":32,"./transformData":21}],18:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1084,7 +1098,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   return error;
 };
 
-},{}],20:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1159,7 +1173,7 @@ module.exports = function mergeConfig(config1, config2) {
   return config;
 };
 
-},{"../utils":33}],21:[function(require,module,exports){
+},{"../utils":32}],20:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1186,7 +1200,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":17}],22:[function(require,module,exports){
+},{"./createError":16}],21:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1208,7 +1222,7 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":33}],23:[function(require,module,exports){
+},{"./../utils":32}],22:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1309,7 +1323,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = defaults;
 
 }).call(this,require('_process'))
-},{"./adapters/http":9,"./adapters/xhr":9,"./helpers/normalizeHeaderName":30,"./utils":33,"_process":39}],24:[function(require,module,exports){
+},{"./adapters/http":8,"./adapters/xhr":8,"./helpers/normalizeHeaderName":29,"./utils":32,"_process":38}],23:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1322,7 +1336,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],25:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1395,7 +1409,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":33}],26:[function(require,module,exports){
+},{"./../utils":32}],25:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1411,7 +1425,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1466,7 +1480,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":33}],28:[function(require,module,exports){
+},{"./../utils":32}],27:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1482,7 +1496,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],29:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1552,7 +1566,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":33}],30:[function(require,module,exports){
+},{"./../utils":32}],29:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1566,7 +1580,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":33}],31:[function(require,module,exports){
+},{"../utils":32}],30:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1621,7 +1635,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":33}],32:[function(require,module,exports){
+},{"./../utils":32}],31:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1650,7 +1664,7 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],33:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
@@ -1996,13 +2010,16 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":24}],34:[function(require,module,exports){
+},{"./helpers/bind":23}],33:[function(require,module,exports){
 const axios = require('axios');
 
 const serverAddress = 'http://localhost:3000';
 
 async function sendSubmission(data, url) {
-  if(url){
+  if(url === 'window'){
+    window.parent.postMessage(data, "*");
+  }
+  else {
     try {
       console.warn(`Sending submission data to server`)
       const response = await axios.post(`${serverAddress}/submissions`, data);
@@ -2010,17 +2027,13 @@ async function sendSubmission(data, url) {
       console.warn(`Failed sending submission to url ${url}: ${err}`)
     }
   }
-  else {
-    console.warn(`No submission url provided, saving data in window global object`)
-    window.submission = data;
-  }
 }
 
 module.exports = {
   sendSubmission
 }
 
-},{"axios":8}],35:[function(require,module,exports){
+},{"axios":7}],34:[function(require,module,exports){
 // TODO: add check to avoid endless loop
 function copyObject(obj) {
   const copy = {};
@@ -2098,7 +2111,7 @@ module.exports = {
   isValidString,
 }
 
-},{}],36:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 const helpers = require('./helpers');
 const valid = require('./validate');
 
@@ -2304,7 +2317,7 @@ module.exports = {
   checkAndFixLastAnimationStep
 }
 
-},{"./helpers":35,"./validate":37}],37:[function(require,module,exports){
+},{"./helpers":34,"./validate":36}],36:[function(require,module,exports){
 //TODO: set all try catch statements
 
 const helpers = require('./helpers.js');
@@ -2380,7 +2393,7 @@ module.exports = {
   dsId: validateDsId,
 }
 
-},{"./helpers.js":35}],38:[function(require,module,exports){
+},{"./helpers.js":34}],37:[function(require,module,exports){
 // Takes a string containing an html element
 function extractTextByClassName(html, className){
   let text;
@@ -2413,7 +2426,7 @@ const helpers = {
 }
 
 module.exports = helpers;
-},{}],39:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2599,4 +2612,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[5]);
+},{}]},{},[4]);

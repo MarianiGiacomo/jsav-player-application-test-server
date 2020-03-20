@@ -1,10 +1,10 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const EXEC_ENV = 'STATIC';
-const SUBMISSION_URL = 'http://localhost:3000/submissions';
+const EXEC_ENV = 'DYNAMIC';
+const SUBMISSION_URL = '';
 
 module.exports = {
   EXEC_ENV,
-  SUBMISSION_URL
+  SUBMISSION_URL,
 }
 
 },{}],2:[function(require,module,exports){
@@ -216,7 +216,7 @@ const setMutationObserver = (targetNode) => {
             case "Animation finished":
               let stopButton = $('#pause-button')[0]
               if(stopButton) {
-                stopButton.click();
+                setTimeout(() => stopButton.click(), 2000);
               }
               break;
             default:
@@ -369,7 +369,7 @@ const startAutoAnimation = () => {
   let animator = startAnimator()
   $("#play-button").off('click', startAutoAnimation)
   $('.jsavforward')[0].click()
-  $("#stop-button").on('click', () => {
+  $("#reset-button").on('click', () => {
     clearInterval(animator)
     $('.jsavbegin')[0].click();
     $("#play-button").on('click', startAutoAnimation)
