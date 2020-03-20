@@ -305,7 +305,7 @@ async function initialize(JSAV) {
     // console.warn(message);
     // let submission = env.SUBMISSION_URL ? await getSingleSubmission(env.SUBMISSION_URL)
     // : window.submission
-    let submission = JSON.parse(new URL(location.href).searchParams.get('submission'))
+    let submission = JSON.parse(new URL(window.location.href).searchParams.get('submission'))
     console.log('submission', submission);
     if(submission && Object.keys(submission).length > 0){
       initiateAnimation(JSAV, submission);
