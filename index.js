@@ -36,75 +36,65 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get('/redirect', (req, res) => {
-  let submission =
-    {
-      "metadata": {},
-      "definitions": {
-        "style": {},
-        "score": {
-          "total": 15,
-          "correct": 0,
-          "undo": 0,
-          "fix": 0,
-          "student": 0
-        },
-        "options": {
-          "title": "Insertion Sort",
-          "instructions": "Use Insertion Sort to sort the table given below in ascending order. Click on an item to select it and click again on another one to swap these bars."
-        },
-        "modelSolution": "function(e){var t=e.ds.array(i,{indexed:!0,layout:\"bar\"});e._undo=[];for(var n=1;n<10;n++)for(var r=n;r>0&&t.value(r-1)>t.value(r);)e.umsg('Shift \"'+t.value(r)+'\" to the left.'),t.swap(r,r-1),e.stepOption(\"grade\",!0),e.step(),r--;return t}"
-      },
-      "initialState": [
-        {
-          "type": "array",
-          "id": "exerArray",
-          "values": [
-            "24",
-            "54",
-            "21",
-            "68",
-            "90",
-            "73",
-            "25",
-            "68",
-            "37",
-            "81"
-          ],
-          "options": {
-            "autoresize": true,
-            "center": true,
-            "layout": "bar",
-            "indexed": true,
-            "template": "<span class=\"jsavvaluebar\"></span><span class=\"jsavvalue\"><span class=\"jsavvaluelabel\">{{value}}</span></span><span class=\"jsavindexlabel\">{{index}}</span>"
-          }
-        }
-      ],
-      "animation": [
-        {
-          "type": "grade",
-          "tstamp": "2020-03-19T13:38:40.512Z",
-          "currentStep": 0,
-          "score": {
-            "total": 15,
-            "correct": 0,
-            "undo": 0,
-            "fix": 0,
-            "student": 0
-          }
-        }
-      ]
-    }
-  //const submission = req.body.submission
-  res.redirect("/jsav-player/player.html?submission=" + submission)
-});
-
 app.post("/", (req, res) => {
-  const submission = req.body.submission;
-  res.append('<META name="status" value="accepted" />');
-  res.append(`<META name="points" value="${submission.definitions.correct}" />`);
-  res.append(`<META name="max-points" value="${req.query.max_points}" />`);
-  res.redirect(`/jsav-player/player.html?submission=${submission}`);
+  // const submission = req.body.submission;
+  const submission = {
+  "metadata": {},
+  "definitions": {
+    "style": {},
+    "score": {
+      "total": 16,
+      "correct": 0,
+      "undo": 0,
+      "fix": 0,
+      "student": 0
+    },
+    "options": {
+      "title": "Insertion Sort",
+      "instructions": "Use Insertion Sort to sort the table given below in ascending order. Click on an item to select it and click again on another one to swap these bars."
+    },
+  },
+  "initialState": [
+    {
+      "type": "array",
+      "id": "exerArray",
+      "values": [
+        "47",
+        "100",
+        "22",
+        "38",
+        "51",
+        "75",
+        "95",
+        "105",
+        "38",
+        "93"
+      ],
+      "options": {
+        "autoresize": true,
+        "center": true,
+        "layout": "bar",
+        "indexed": true,
+        "template": "<span class=\"jsavvaluebar\"></span><span class=\"jsavvalue\"><span class=\"jsavvaluelabel\">{{value}}</span></span><span class=\"jsavindexlabel\">{{index}}</span>"
+      }
+    }
+  ],
+  "animation": [
+    {
+      "type": "grade",
+      "tstamp": "2020-03-20T15:52:09.901Z",
+      "currentStep": 0,
+      "score": {
+        "total": 16,
+        "correct": 0,
+        "undo": 0,
+        "fix": 0,
+        "student": 0
+      }
+    }
+  ]
+}
+  res.redirect(`/jsav-player/player.html?submission=${JSON.stringify(submission)}`);
 })
 
 /**

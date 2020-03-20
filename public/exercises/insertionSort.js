@@ -69,8 +69,6 @@
   // bind a function to handle all click events on the array
   jsavArray.click(function(index) {
       // the first click will select an index and save it
-      console.log('this in click handler',this)
-      console.log('swapindex value in click handler', swapIndex.value())
       if (swapIndex.value() === -1) {
           swapIndex.value(index);
           this.addClass(index, "selected");
