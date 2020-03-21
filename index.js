@@ -7,6 +7,9 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const cors = require("cors");
 const redirect = require("express-redirect");
+// const base64 = require('base-64
+const base64 = require('safe-base64');
+const utf8 = require('utf8');
 
 /**
  * App Variables
@@ -37,64 +40,20 @@ app.get("/", (req, res) => {
 });
 
 app.post("/", (req, res) => {
-  // const submission = req.body.submission;
-  const submission = {
-  "metadata": {},
-  "definitions": {
-    "style": {},
-    "score": {
-      "total": 16,
-      "correct": 0,
-      "undo": 0,
-      "fix": 0,
-      "student": 0
-    },
-    "options": {
-      "title": "Insertion Sort",
-      "instructions": "Use Insertion Sort to sort the table given below in ascending order. Click on an item to select it and click again on another one to swap these bars."
-    },
-  },
-  "initialState": [
-    {
-      "type": "array",
-      "id": "exerArray",
-      "values": [
-        "47",
-        "100",
-        "22",
-        "38",
-        "51",
-        "75",
-        "95",
-        "105",
-        "38",
-        "93"
-      ],
-      "options": {
-        "autoresize": true,
-        "center": true,
-        "layout": "bar",
-        "indexed": true,
-        "template": "<span class=\"jsavvaluebar\"></span><span class=\"jsavvalue\"><span class=\"jsavvaluelabel\">{{value}}</span></span><span class=\"jsavindexlabel\">{{index}}</span>"
-      }
-    }
-  ],
-  "animation": [
-    {
-      "type": "grade",
-      "tstamp": "2020-03-20T15:52:09.901Z",
-      "currentStep": 0,
-      "score": {
-        "total": 16,
-        "correct": 0,
-        "undo": 0,
-        "fix": 0,
-        "student": 0
-      }
-    }
-  ]
-}
-  res.redirect(`/jsav-player/player.html?submission=${JSON.stringify(submission)}`);
+  const jsonData = req.body;
+  const stringData = JSON.stringify(jsonData)
+  // const bytes = utf8.encode(stringData);
+  const buffer = Buffer.from(stringData)
+  const encoded = base64.encode(buffer)
+  // console.log(encoded.length)
+  // console.log(encoded)
+  const iframe =
+  `<iframe
+    id="player"
+    title="player"
+    src="http://localhost:8000/jsav-player/player.html?submission=${encoded}"
+  </iframe>`;
+  res.send(iframe);
 })
 
 /**

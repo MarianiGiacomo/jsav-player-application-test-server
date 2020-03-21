@@ -15,10 +15,13 @@
     "nodemon": "^2.0.2"
   },
   "dependencies": {
+    "base-64": "^0.1.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "express-redirect": "^1.2.2"
+    "express-redirect": "^1.2.2",
+    "safe-base64": "^2.0.1-0",
+    "utf8": "^3.0.0"
   },
   "engines": {
     "node": "v12.16.1"
