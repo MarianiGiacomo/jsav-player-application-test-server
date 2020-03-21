@@ -7,9 +7,7 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const cors = require("cors");
 const redirect = require("express-redirect");
-// const base64 = require('base-64
 const base64 = require('safe-base64');
-const utf8 = require('utf8');
 
 /**
  * App Variables
@@ -42,16 +40,13 @@ app.get("/", (req, res) => {
 app.post("/", (req, res) => {
   const jsonData = req.body;
   const stringData = JSON.stringify(jsonData)
-  // const bytes = utf8.encode(stringData);
   const buffer = Buffer.from(stringData)
   const encoded = base64.encode(buffer)
-  // console.log(encoded.length)
-  // console.log(encoded)
   const iframe =
   `<iframe
     id="player"
     title="player"
-    src="http://localhost:8000/jsav-player/player.html?submission=${encoded}"
+    src="https://gentle-fjord-22671.herokuapp.com/jsav-player/player.html?submission=${encoded}"
   </iframe>`;
   res.send(iframe);
 })
