@@ -356,6 +356,29 @@ async function getSingleSubmission(url) {
   }
 }
 
+const startAnimator = () => {
+  return setInterval(timedAction, 1000);
+}
+
+const timedAction = () => {
+  $('.jsavforward')[0].click();
+}
+
+const startAutoAnimation = () => {
+  let animator = startAnimator()
+  $("#play-button").off('click', startAutoAnimation)
+  $('.jsavforward')[0].click()
+  $("#reset-button").on('click', () => {
+    clearInterval(animator)
+    $('.jsavbegin')[0].click();
+    $("#play-button").on('click', startAutoAnimation)
+  })
+  $("#pause-button").on('click', () => {
+    clearInterval(animator)
+    $("#play-button").on('click', startAutoAnimation)
+  })
+}
+
 function initiateAnimation(JSAV, submission) {
   try {
     new JSAV.utils.Settings($('#settings'));
@@ -393,30 +416,6 @@ function setListeners() {
     }
   }
 }
-
-const startAutoAnimation = () => {
-  let animator = startAnimator()
-  $("#play-button").off('click', startAutoAnimation)
-  $('.jsavforward')[0].click()
-  $("#reset-button").on('click', () => {
-    clearInterval(animator)
-    $('.jsavbegin')[0].click();
-    $("#play-button").on('click', startAutoAnimation)
-  })
-  $("#pause-button").on('click', () => {
-    clearInterval(animator)
-    $("#play-button").on('click', startAutoAnimation)
-  })
-}
-
-const startAnimator = () => {
-  return setInterval(timedAction, 1000);
-}
-
-const timedAction = () => {
-  $('.jsavforward')[0].click();
-}
-
 
 // const alertAndLog = (error) => {
 //   alert(`Error handling animation: ${error.message} \n continuing with execution but the shown animation
