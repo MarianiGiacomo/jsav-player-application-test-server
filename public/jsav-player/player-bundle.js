@@ -356,28 +356,6 @@ async function getSingleSubmission(url) {
   }
 }
 
-const startAnimator = () => {
-  return setInterval(timedAction, 1000);
-}
-
-const timedAction = () => {
-  $('.jsavforward')[0].click();
-}
-
-const startAutoAnimation = () => {
-  let animator = startAnimator()
-  $("#play-button").off('click', startAutoAnimation)
-  $('.jsavforward')[0].click()
-  $("#reset-button").on('click', () => {
-    clearInterval(animator)
-    $('.jsavbegin')[0].click();
-    $("#play-button").on('click', startAutoAnimation)
-  })
-  $("#pause-button").on('click', () => {
-    clearInterval(animator)
-    $("#play-button").on('click', startAutoAnimation)
-  })
-}
 
 function initiateAnimation(JSAV, submission) {
   try {
@@ -394,6 +372,29 @@ function initiateAnimation(JSAV, submission) {
     console.warn(err)
     throw err
   }
+}
+
+function startAutoAnimation() {
+  let animator = startAnimator()
+  $("#play-button").off('click', startAutoAnimation)
+  $('.jsavforward')[0].click()
+  $("#reset-button").on('click', () => {
+    clearInterval(animator)
+    $('.jsavbegin')[0].click();
+    $("#play-button").on('click', startAutoAnimation)
+  })
+  $("#pause-button").on('click', () => {
+    clearInterval(animator)
+    $("#play-button").on('click', startAutoAnimation)
+  })
+}
+
+function startAnimator() {
+  return setInterval(timedAction, 1000);
+}
+
+function timedAction() {
+  $('.jsavforward')[0].click();
 }
 
 function setListeners() {
