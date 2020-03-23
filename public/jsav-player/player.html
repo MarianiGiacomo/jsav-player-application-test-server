@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Visual Algorithm Simulatin Player</title>
   <link rel="stylesheet"  href="../css/JSAV.css" type="text/css" />
   <link rel="stylesheet"  href="../css/player.css" type="text/css" />
+  <link rel="stylesheet" href="../css/odsaStyle-min.css" type="text/css" />
   <script src="../lib/jquery.min.js"></script>
   <script src="../lib/jquery-ui.min.js"></script>
   <script src="../lib/jquery.transit.js"></script>
@@ -26,7 +28,7 @@
       <button>Export Animation</button>
     </div>
     <div class="animation-instructions">
-      <p>Click the <b>arrows</b> buttons or use your <b>keyboard</b> to step through the animation</p>
+      <p>Click the <b>arrows</b> buttons or click on this windown and then use your <b>keyboard</b> to step through the animation</p>
       <p><b>Key right = forward</b> | <b>key back = backward</b> | <b>Key up = begin</b> | <b>key down = end</b></p>
     </div>
   </div>
@@ -47,5 +49,8 @@
     <div id="model-solution"></div>
   </div>
 </body>
-<script src="./player-bundle.js"></script>
+  <script>
+    window.submission = submission;
+  </script>
+  <script src="./player-bundle.js"></script>
 </html>
