@@ -240,7 +240,7 @@ module.exports = {
   setAnimationSteps,
 }
 
-},{"../dataStructures/dataStructures":3,"../utils/helperFunctions":23}],3:[function(require,module,exports){
+},{"../dataStructures/dataStructures":3,"../utils/helperFunctions":22}],3:[function(require,module,exports){
 const dataStructures = []
 
 function addArray(submissionId, arr) {
@@ -7111,7 +7111,6 @@ module.exports = ZStream;
 const initialState = require("./initialState/initialState")
 const animation = require("./animation/animation")
 const dataStructures = require("./dataStructures/dataStructures")
-const rest = require("./rest/rest")
 const helpers = require("./utils/helperFunctions.js")
 const env = require('./.env.js');
 let $ = window.$;
@@ -7125,7 +7124,7 @@ async function initialize(JSAV) {
     // try { buffer = Buffer.from(deflatedData, 'base64') }
     // catch(err) { console.warn(err) }
     // let submission = JSON.parse(helpers.inflateToAscii(buffer));
-    let submission = window.submission
+    let submission = await getSubmission();
     if(submission && Object.keys(submission).length > 0){
       initiateAnimation(JSAV, submission);
       setListeners();
@@ -7137,10 +7136,13 @@ async function initialize(JSAV) {
   }
 }
 
-async function getSingleSubmission(url) {
+async function getSubmission() {
   try {
-    const submissions = await rest.getSubmissions(url);
-    return submissions[submissions.length -1]
+    const parsedUrl = new URL(window.location.href);
+    const url = decodeURI(parsedUrl.searchParams.get("submission"));
+    const response = await fetch(url)
+    const submission = response.json();
+    return submission;
   } catch (err) {
     throw new Error(` Failed getting submission from address ${url}: ${err}`)
   }
@@ -7215,19 +7217,7 @@ module.exports = {
   initialize
 }
 
-},{"./.env.js":1,"./animation/animation":2,"./dataStructures/dataStructures":3,"./initialState/initialState":4,"./rest/rest":22,"./utils/helperFunctions.js":23}],22:[function(require,module,exports){
-const server = "http://localhost:3000/submissions"
-
-async function getSubmissions () {  
-  const response = await fetch(server)
-  return response.json()
-}
-
-const rest = { getSubmissions }
-
-module.exports = rest
-
-},{}],23:[function(require,module,exports){
+},{"./.env.js":1,"./animation/animation":2,"./dataStructures/dataStructures":3,"./initialState/initialState":4,"./utils/helperFunctions.js":22}],22:[function(require,module,exports){
 (function (Buffer){
 const  pako = require('pako');
 
@@ -7267,7 +7257,7 @@ module.exports = {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":25,"pako":5}],24:[function(require,module,exports){
+},{"buffer":24,"pako":5}],23:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -7421,7 +7411,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],25:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 (function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
@@ -9230,7 +9220,7 @@ var hexSliceLookupTable = (function () {
 })()
 
 }).call(this,require("buffer").Buffer)
-},{"base64-js":24,"buffer":25,"ieee754":26}],26:[function(require,module,exports){
+},{"base64-js":23,"buffer":24,"ieee754":25}],25:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
