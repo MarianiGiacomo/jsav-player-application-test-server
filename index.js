@@ -54,7 +54,7 @@ app.get("/", (req, res) => {
     // const idHex = bytes.toString(CryptoJS.enc.Utf8);
     // console.log('received cipher', cipher);
     console.log('received cipher', cipher);
-    const idHex = utils.decrypt(cipher)
+    const idHex = cipher
     console.log('idHex: ', idHex);
     const _id = new ObjectID.createFromHexString(idHex);
     console.log('_id: ', _id)
@@ -82,9 +82,9 @@ app.post("/", (req, res) => {
     let id = resData.insertedId.toHexString();
     console.log('id: ', id);
     // let cipher = CryptoJS.AES.encrypt(id, cryptoKey).toString();
-    let cipher = JSON.stringify(utils.encrypt(id));
+    // let cipher = JSON.stringify(utils.encrypt(id));
     console.log('sent cipher', cipher)
-    let urlParam = `${server}/?submission=${cipher}`;
+    let urlParam = `${server}/?submission=${id}`;
     const iframe =
     `<iframe
       id="player"
