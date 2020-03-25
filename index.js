@@ -48,17 +48,16 @@ app.get("/", (req, res) => {
   const cipher = req.query['submission'];
   if(cipher) {
     const bytes = CryptoJS.AES.decrypt(cipher, cryptoKey);
-    console.log('bytes', bytes);
+    console.log('bytes: ', bytes);
     // const idHex = Buffer.from(bytes, 'hex');
     const idHex = bytes.toString(CryptoJS.enc.Utf8);
     const _id = new ObjectID.createFromHexString(idHex);
-    console.log(idHex);
-    console.log(_id)
+    console.log('idHex: ', idHex);
+    console.log('_id: ', _id)
     const collection = client.db("vas-jsav").collection(dbCollection);
     collection.findOne({ _id })
     .then( (data, err) => {
       if(err) throw err;
-      console.log(data)
       res.send(data);
     })
   } else {
@@ -70,13 +69,15 @@ app.get("/", (req, res) => {
   }
 });
 
-app.post("/", (req, res) => {
+app.post("/", (req, res) =>
+  console.log('Received post request');
   const jsonData = req.body;
+  console.log('jsonData', jsonData);
   const collection = client.db("vas-jsav").collection(dbCollection);
   collection.insertOne(jsonData)
   .then( resData => {
     let id = resData.insertedId.toHexString();
-    console.log('id', id);
+    console.log('id: ', id);
     let cipher = CryptoJS.AES.encrypt(id, cryptoKey).toString();
     let urlParam = `${server}/?submission=${cipher}`;
     const iframe =
