@@ -21,9 +21,7 @@
     "crypto-js": "^4.0.0",
     "express": "^4.17.1",
     "express-redirect": "^1.2.2",
-    "mongodb": "^3.5.5",
-    "mongoose": "^5.9.5",
-    "safe-base64": "^2.0.1-0"
+    "mongodb": "^3.5.5"
   },
   "engines": {
     "node": "v12.16.1"

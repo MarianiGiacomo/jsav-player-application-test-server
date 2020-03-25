@@ -22,8 +22,10 @@ const mode = "prod";
 const exerciseServer = "https://gentle-fjord-22671.herokuapp.com";
 const testServer = "http://localhost:8000"
 const server = mode === "test"? testServer : exerciseServer;
+const dbURI = mode === "test"? dbConf.dbURI : process.env.DATABASE_URL;
 const dbCollection = "submissions"
-const client = new MongoClient(dbConf.dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
+const client = new MongoClient(dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
+const cryptoKey = mode === "test"? dbConf.cryptoKey : process.env.CRYPTOKEY;
 
 
 /**
@@ -44,7 +46,7 @@ app.redirect("/exercises/:exercise(.*)", "/", "post")
 app.get("/", (req, res) => {
   const cipher = req.query['submission'];
   if(cipher) {
-    const bytes = CryptoJS.AES.decrypt(cipher, dbConf.cryptoKey);
+    const bytes = CryptoJS.AES.decrypt(cipher, cryptoKey);
     const idHex = bytes.toString(CryptoJS.enc.Utf8);
     const _id = new ObjectID.createFromHexString(idHex);
     console.log(idHex);
@@ -67,14 +69,11 @@ app.get("/", (req, res) => {
 
 app.post("/", (req, res) => {
   const jsonData = req.body;
-  // const stringData = JSON.stringify(jsonData)
-  // const buffer = Buffer.from(stringData)
-  // const encoded = base64.encode(buffer)
   const collection = client.db("vas-jsav").collection(dbCollection);
   collection.insertOne(jsonData)
   .then( resData => {
     let id = resData.insertedId.toHexString();
-    let cipher = CryptoJS.AES.encrypt(id.toString(), dbConf.cryptoKey).toString();
+    let cipher = CryptoJS.AES.encrypt(id.toString(), cryptoKey).toString();
     let urlParam = `${server}/?submission=${cipher}`;
     const iframe =
     `<iframe
@@ -93,13 +92,6 @@ app.listen(port, () => {
   client.connect((err) => {
     if(err) throw err;
     else console.log('connected to db');
-    const collection = client.db("vas-jsav").collection(dbCollection);
-    // let _id = "5e7a9463a382a51ddac08532"
-    // collection.findOne({ _id } )
-    // .then( (data, err) => {
-    //   if(err) throw err;
-    //   console.log(data);
-    // })
   });
   console.log(`Listening to requests on http://localhost:${port}`);
 });
