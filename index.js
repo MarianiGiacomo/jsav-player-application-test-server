@@ -83,7 +83,7 @@ app.post("/", (req, res) => {
     console.log('id: ', id);
     // let cipher = CryptoJS.AES.encrypt(id, cryptoKey).toString();
     // let cipher = JSON.stringify(utils.encrypt(id));
-    console.log('sent cipher', cipher)
+    // console.log('sent cipher', cipher)
     let urlParam = `${server}/?submission=${id}`;
     const iframe =
     `<iframe
