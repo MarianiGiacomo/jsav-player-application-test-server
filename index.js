@@ -18,7 +18,8 @@ const CryptoJS = require("crypto-js");
 const app = express();
 const port = process.env.PORT || "8000";
 const mode = "prod";
-if(mode === "test") const dbConf = require("./.db.conf.js");
+let dbConf;
+if(mode === "test") dbConf = require("./.db.conf.js");
 const exerciseServer = "https://gentle-fjord-22671.herokuapp.com";
 const testServer = "http://localhost:8000"
 const server = mode === "test"? testServer : exerciseServer;
