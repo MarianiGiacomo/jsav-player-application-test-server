@@ -72,7 +72,6 @@ app.get("/", (req, res) => {
 app.post("/", (req, res) => {
   console.log('Received post request');
   const jsonData = req.body;
-  console.log('jsonData', jsonData);
   const collection = client.db("vas-jsav").collection(dbCollection);
   collection.insertOne(jsonData)
   .then( resData => {
