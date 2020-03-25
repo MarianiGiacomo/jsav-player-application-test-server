@@ -84,7 +84,7 @@ app.post("/", (req, res) => {
     let id = resData.insertedId.toHexString();
     console.log('id: ', id);
     // let cipher = CryptoJS.AES.encrypt(id, cryptoKey).toString();
-    const textBytes = aesjs.utils.utf8.toBytes(text);
+    const textBytes = aesjs.utils.utf8.toBytes(id);
     const aesCtr = new aesjs.ModeOfOperation.ctr(key);
     const encryptedBytes = aesCtr.encrypt(textBytes);
     let cipher = aesjs.utils.hex.fromBytes(encryptedBytes);
