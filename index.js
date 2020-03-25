@@ -69,7 +69,7 @@ app.get("/", (req, res) => {
   }
 });
 
-app.post("/", (req, res) =>
+app.post("/", (req, res) => {
   console.log('Received post request');
   const jsonData = req.body;
   console.log('jsonData', jsonData);
