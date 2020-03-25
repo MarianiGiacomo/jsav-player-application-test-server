@@ -49,8 +49,8 @@ app.get("/", (req, res) => {
   if(cipher) {
     const bytes = CryptoJS.AES.decrypt(cipher, cryptoKey);
     console.log('bytes', bytes);
-    const idHex = Buffer.from(bytes, 'hex');
-    // const idHex = bytes.toString(CryptoJS.enc.Utf8);
+    // const idHex = Buffer.from(bytes, 'hex');
+    const idHex = bytes.toString(CryptoJS.enc.Utf8);
     const _id = new ObjectID.createFromHexString(idHex);
     console.log(idHex);
     console.log(_id)
@@ -76,7 +76,8 @@ app.post("/", (req, res) => {
   collection.insertOne(jsonData)
   .then( resData => {
     let id = resData.insertedId.toHexString();
-    let cipher = CryptoJS.AES.encrypt(id.toString(), cryptoKey).toString();
+    console.log('id', id);
+    let cipher = CryptoJS.AES.encrypt(id, cryptoKey).toString();
     let urlParam = `${server}/?submission=${cipher}`;
     const iframe =
     `<iframe
