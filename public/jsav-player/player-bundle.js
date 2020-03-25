@@ -7139,7 +7139,7 @@ async function initialize(JSAV) {
 async function getSubmission() {
   try {
     const parsedUrl = new URL(window.location.href);
-    const url = decodeURI(parsedUrl.searchParams.get("submission"));
+    const url = parsedUrl.searchParams.get("submission");
     const response = await fetch(url)
     const submission = response.json();
     return submission;

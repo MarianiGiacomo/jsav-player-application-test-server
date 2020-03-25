@@ -235,7 +235,6 @@ let submission_url;
 let post_url;
 
 initialize();
-setEventOnWindowClose();
 
 function initialize() {
   setSubmissionAndPostUrl();
