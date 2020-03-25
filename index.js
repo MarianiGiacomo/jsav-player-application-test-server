@@ -49,7 +49,7 @@ app.get("/", (req, res) => {
   if(cipher) {
     const bytes = CryptoJS.AES.decrypt(cipher, cryptoKey);
     console.log('bytes: ', bytes);
-    const idHex = Buffer.from(bytes, 'utf8');
+    const idHex = Buffer.from(bytes.words, 'utf8');
     // const idHex = bytes.toString(CryptoJS.enc.Utf8);
     console.log('idHex: ', idHex);
     const _id = new ObjectID.createFromHexString(idHex);
