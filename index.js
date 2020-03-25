@@ -87,7 +87,7 @@ app.post("/", (req, res) => {
     const textBytes = aesjs.utils.utf8.toBytes(text);
     const aesCtr = new aesjs.ModeOfOperation.ctr(key);
     const encryptedBytes = aesCtr.encrypt(textBytes);
-    let cipher = = aesjs.utils.hex.fromBytes(encryptedBytes);
+    let cipher = aesjs.utils.hex.fromBytes(encryptedBytes);
     console.log('sent cipher', cipher)
     let urlParam = `${server}/?submission=${cipher}`;
     const iframe =
