@@ -51,8 +51,8 @@ app.get("/", (req, res) => {
     console.log('bytes: ', bytes);
     // const idHex = Buffer.from(bytes, 'hex');
     const idHex = bytes.toString(CryptoJS.enc.Utf8);
-    const _id = new ObjectID.createFromHexString(idHex);
     console.log('idHex: ', idHex);
+    const _id = new ObjectID.createFromHexString(idHex);
     console.log('_id: ', _id)
     const collection = client.db("vas-jsav").collection(dbCollection);
     collection.findOne({ _id })
