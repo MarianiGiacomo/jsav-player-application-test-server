@@ -18,7 +18,7 @@ const dbConf = require("./.db.conf.js");
  */
 const app = express();
 const port = process.env.PORT || "8000";
-const mode = "test";
+const mode = "prod";
 const exerciseServer = "https://gentle-fjord-22671.herokuapp.com";
 const testServer = "http://localhost:8000"
 const server = mode === "test"? testServer : exerciseServer;
