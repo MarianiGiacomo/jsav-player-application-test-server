@@ -54,7 +54,7 @@ app.get("/", (req, res) => {
     // const idHex = bytes.toString(CryptoJS.enc.Utf8);
     console.log('received cipher', cipher);
     const encryptedBytes = aesjs.utils.hex.toBytes(cipher);
-    const aesCtr = new aesjs.ModeOfOperation.ctr(key);
+    const aesCtr = new aesjs.ModeOfOperation.ctr(cryptoKey);
     const decryptedBytes = aesCtr.decrypt(encryptedBytes);
     const idHex = aesjs.utils.utf8.fromBytes(decryptedBytes);
     console.log('idHex: ', idHex);
@@ -85,7 +85,7 @@ app.post("/", (req, res) => {
     console.log('id: ', id);
     // let cipher = CryptoJS.AES.encrypt(id, cryptoKey).toString();
     const textBytes = aesjs.utils.utf8.toBytes(id);
-    const aesCtr = new aesjs.ModeOfOperation.ctr(key);
+    const aesCtr = new aesjs.ModeOfOperation.ctr(cryptoKey);
     const encryptedBytes = aesCtr.encrypt(textBytes);
     let cipher = aesjs.utils.hex.fromBytes(encryptedBytes);
     console.log('sent cipher', cipher)
