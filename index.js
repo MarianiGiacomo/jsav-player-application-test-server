@@ -56,7 +56,7 @@ app.get("/", (req, res) => {
     const encryptedBytes = aesjs.utils.hex.toBytes(cipher);
     const aesCtr = new aesjs.ModeOfOperation.ctr(key);
     const decryptedBytes = aesCtr.decrypt(encryptedBytes);
-    const idHex =  = aesjs.utils.utf8.fromBytes(decryptedBytes);
+    const idHex = aesjs.utils.utf8.fromBytes(decryptedBytes);
     console.log('idHex: ', idHex);
     const _id = new ObjectID.createFromHexString(idHex);
     console.log('_id: ', _id)
