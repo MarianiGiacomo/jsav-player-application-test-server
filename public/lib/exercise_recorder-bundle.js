@@ -2077,9 +2077,10 @@ function objectIsNotArray(object) {
 
 function doesNotContainObjects(object) {
   for(let k in object) {
-    if (typeof(object[k]) === "object") {
+    if (typeof(object[k]) === "object" && object[k] !== null) {
       throw new Error(`Object can not contain other objects: ${JSON.stringify(object)}`);
     }
+    else if(object[k] === null) console.warn(`Object ${k} is null`);
   }
   return true;
 }
