@@ -12,7 +12,7 @@
   margin: 5px;
 }
 .import-export, .final-grade, .jsavoutput, .play, .animation-instructions,
-.model-solution, .auto-animation  {
+.model-answer, .auto-animation, .slide-show {
   text-align: center;
   margin: 5px;
 }
@@ -35,13 +35,13 @@ button {
 p {
   margin: 5px !important;
 }
-#model-solution path {
+#model-answer path {
 display: none;
 }
 .no-data {
   text-align: center;
 }
-.model-solution {
+.model-answer {
   min-height: 350px;
 }
 

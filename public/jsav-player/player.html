@@ -20,7 +20,13 @@
     <div class="auto-animation">
       <button id="play-button">Play</button>
       <button id="pause-button">Pause</button>
-      <button id="stop-button">Stop</button>
+      <button id="reset-button">Reset</button>
+    </div>
+    <div class="slide-show">
+      <button id="to-beginning">&lt;&lt;</button>
+      <button id="step-backward">&lt;</button>
+      <button id="step-forward">&gt;</button>
+      <button id="to-end">&gt;&gt;</button>
     </div>
     <div class="import-export">
       <button id="settings">Animation Speed</button>
@@ -28,25 +34,16 @@
       <button>Export Animation</button>
     </div>
     <div class="animation-instructions">
-      <p>Click the <b>arrows</b> buttons or click on this windown and then use your <b>keyboard</b> to step through the animation</p>
+      <p>Click the <b>arrows</b> buttons or use your <b>keyboard</b> to step through the animation</p>
       <p><b>Key right = forward</b> | <b>key back = backward</b> | <b>Key up = begin</b> | <b>key down = end</b></p>
     </div>
   </div>
-  <div id="jsavcontainer">
-    <div class="jsavcontrols"></div>
-    <div class="instructions-div">
-      <p class="instructLabel">Instructions:</p>
-      <p class="instructions" id="exercise-instructions"></p>
-    </div>
-    <div class="final-grade" id="final-grade">
-      <b>Final Score:</b>
-      <div id="scores"></div>
-    </div>
-    <p class="jsavoutput jsavline"></p>
+  <div id="animation-container">
+
   </div>
-  <div class="model-solution">
-    <h3>Here will be shown the model solution steps if they are present in the animation</h3>
-    <div id="model-solution"></div>
+  <div class="model-answer">
+    <h3>Here will be shown the model answer steps if they are present in the animation</h3>
+    <div id="model-answer"></div>
   </div>
 </body>
   <script src="./player-bundle.js"></script>

@@ -1,59 +1,35 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const submission = require('../submission/submission');
+const arrayAnimation = require('./array/array-animation');
+const modelAnswerAnimation = require('./model-answer/model-answer-animation');
+const helpers = require('../utils/helperFunctions');
 
-function handleArrayEvents(eventData) {
-  switch(eventData.type) {
-    case 'jsav-array-click':
-      const clickData = {
-        type: 'click',
-        tstamp: eventData.tstamp,
-        currentStep: eventData.currentStep,
-        dataStructureId: eventData.arrayid,
-        index: eventData.index
-      }
-      try {
-        submission.addAnimationStep.dsClick(clickData);
-      } catch (error) {
-        console.warn(`Could not set array click in animation: ${error}`);
-      }
-  }
-  // TODO: check also for state changes?
+
+function handleGradableStep(exercise, eventData, exerciseDOM) {
+  const dataStructuresState = getDataStructuresState(submissionDataStructures(), exercise);
+  if(dataStructuresState.length) addStepToSubmission(eventData, dataStructuresState, exerciseDOM);
 }
 
-function handleStateChange(exercise, eventData) {
-  // Filter to remove undefined elements
-  const newStates = getNewStates(submissionDataStructures(), exercise).filter(s =>
-    s && Object.keys(s).length > 0);
-  if(newStates.length) {
-    addNewStatesToSubmission(eventData, newStates);
-    return newStates;
-  }
-  return false;
-}
-
-function addNewStatesToSubmission(eventData, newStates) {
-  const type = eventData.type === 'jsav-exercise-undo' ? 'undo' : 'state-change';
-  const animation = submission.state().animation;
-  const currentStep = eventData.currentStep || animation[animation.length - 1].currentStep +1;
-  newStates.forEach((state, i) => {
-    const newState = {
-      type,
-      tstamp: eventData.tstamp || new Date(),
-      currentStep,
-      dataStructureId: state.id,
-      state: [ ...state.values]
-    };
-    try {
-      submission.addAnimationStep.stateChange(newState);
-    } catch (error) {
-      console.warn(`Could not add state change to animatio: ${error}`)
+// Returns an empthy array if there is not state change
+function getDataStructuresState(dataStructures, exercise) {
+  return dataStructures.map((ds, i) => {
+    switch(ds.type) {
+      case 'array':
+        // TODO: make a function for this
+        const arrayInExercise = Array.isArray(exercise.initialStructures) ?
+        exercise.initialStructures.find(s => s.element['0'].id === ds.id) :
+        exercise.initialStructures;
+        return { id: ds.id, values: [ ...arrayInExercise._values ] };
+        break;
+      default:
+        return `unknown ds type ${ds.type}`;
     }
   });
 }
 
 // TODO: support for other data structures
 function submissionDataStructures() {
-  const dataStructures = submission.state().initialState.map( ds => {
+  const dataStructures = submission.state().initialState.dataStructures.map( ds => {
     return {
       type: ds.type,
       id: ds.id,
@@ -63,65 +39,27 @@ function submissionDataStructures() {
   return dataStructures;
 }
 
-function dsInsubmissionLastValues(dsId) {
-  let initialDs = submission.state().initialState.find(ds => ds.id === dsId);
-  const initialDsValues = [...initialDs.values];
-  let lastDsValues;
-  let stateTypes = ['state-change', 'undo'];
-  submission.state().animation.forEach((step,  i) => {
-    if(stateTypes.includes(step.type) && step.dataStructureId === dsId) {
-      lastDsValues = [...step.state];
-    }
-  })
-  return lastDsValues || initialDsValues;
-}
-
-// Returns an empthy array if there is not state change
-function getNewStates(dataStructures, exercise) {
-  return dataStructures.map((ds, i) => {
-    switch(ds.type) {
-      case 'array':
-        // TODO: make a function for this
-        const arrayInExercise = Array.isArray(exercise.initialStructures) ?
-        exercise.initialStructures.find(s => s.element['0'].id === ds.id) :
-        exercise.initialStructures;
-        if (!arrayInExercise._values.every((v,j) => v === dsInsubmissionLastValues(ds.id)[j])) {
-          return { id: ds.id, values: [ ...arrayInExercise._values ] };
-        }
-        break;
-      default:
-        return `unknown ds type ${ds.type}`;
-    }
-  });
-}
-
-function handleModelSolution(exercise, eventData) {
-  const type = String(eventData.type.match(/model.*/))
-  const currentStep = eventData.currentStep;
-  switch(type) {
-    case 'model-init':
-      break;
-    default:
-      if(exercise.modelDialog) {
-        const newState = {
-          type,
-          tstamp: eventData.tstamp || new Date(),
-          currentStep,
-          state: exercise.modelDialog[0].innerHTML
-        };
-        try {
-          submission.addAnimationStep.modelSolution(newState);
-        } catch (error) {
-          console.warn(`Could not add model solution step to animation: ${error}`)
-        }
-      }
-      break;
+function addStepToSubmission(eventData, dataStructuresState, exerciseDOM) {
+  const type = eventData.type === 'jsav-exercise-undo' ? 'undo' : 'gradeable-step';
+  const animation = submission.state().animation;
+  const currentStep = eventData.currentStep || animation[animation.length - 1].currentStep +1;
+  const newState = {
+    type,
+    tstamp: eventData.tstamp || new Date(),
+    currentStep,
+    dataStructuresState,
+    animationDOM: exerciseDOM
+  };
+  try {
+    submission.addAnimationStepSuccesfully.gradableStep(newState);
+  } catch (error) {
+    console.warn(`Could not add state change to animatio: ${error}`)
   }
 }
 
 function handleGradeButtonClick(eventData) {
   try {
-    submission.addAnimationStep.gradeButtonClick({
+    submission.addAnimationStepSuccesfully.gradeButtonClick({
       type: "grade",
       tstamp: eventData.tstamp,
       currentStep: eventData.currentStep,
@@ -133,29 +71,98 @@ function handleGradeButtonClick(eventData) {
 
 }
 
-
 module.exports = {
-  handleArrayEvents,
-  handleStateChange,
+  handleArrayEvents: arrayAnimation.handleArrayEvents,
+  handleGradableStep,
   handleGradeButtonClick,
-  handleModelSolution,
+  handleModelAnswer: modelAnswerAnimation.handleOpenModelAnswer
 }
 
-},{"../submission/submission":35}],2:[function(require,module,exports){
+},{"../submission/submission":36,"../utils/helperFunctions":38,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
+const submission = require('../../submission/submission');
+const helpers = require('../../utils/helperFunctions');
+
+function handleArrayEvents(exercise, eventData) {
+  const id = eventData.arrayid;
+  switch(eventData.type) {
+    case 'jsav-array-click':
+      const clickData = {
+        type: 'click',
+        tstamp: eventData.tstamp,
+        currentStep: eventData.currentStep,
+        dataStructure: {
+          id,
+          values: getArrayValues(exercise.initialStructures, id)
+        },
+        index: eventData.index,
+        animationDOM: helpers.getExerciseDOM(exercise)
+        }
+      try {
+        submission.addAnimationStepSuccesfully.dsClick(clickData);
+      } catch (error) {
+        console.warn(`Could not set array click in animation: ${error}`);
+      }
+  }
+}
+
+function getArrayValues(initialStructures, id) {
+  const moreThanOneArrayInExercise = Array.isArray(initialStructures);
+  if (moreThanOneArrayInExercise) {
+    const array = initialStructures.find( ds => ds.element['0'].id === id)
+    return [ ...array._values ];
+  }
+  return [ ...initialStructures._values ];
+}
+
+module.exports = {
+  handleArrayEvents
+}
+
+},{"../../submission/submission":36,"../../utils/helperFunctions":38}],3:[function(require,module,exports){
+const submission = require('../../submission/submission');
+
+function handleOpenModelAnswer(exercise, eventData) {
+  const type = String(eventData.type.match(/model.*/))
+  const currentStep = eventData.currentStep;
+  switch(type) {
+    case 'model-init':
+      break;
+    default:
+      if(exercise.modelDialog) {
+        const newStep = {
+          type,
+          tstamp: eventData.tstamp || new Date(),
+          currentStep,
+          modelAnswerDOM: exercise.modelDialog[0].innerHTML
+        };
+        try {
+          submission.addAnimationStepSuccesfully.modelAnswerStep(newStep);
+        } catch (error) {
+          console.warn(`Could not add model answer step to animation: ${error}`)
+        }
+      }
+      break;
+  }
+}
+
+module.exports = {
+  handleOpenModelAnswer
+}
+
+},{"../../submission/submission":36}],4:[function(require,module,exports){
 const helpers = require('../utils/helperFunctions');
 const submission = require('../submission/submission');
 
 function setExerciseOptions(eventData) {
-  submission.addDefinition.options({
+  submission.addDefinitionSuccesfully.options({
     'title': getExerciseTitle(eventData.initialHTML),
     'instructions': getExerciseInstructions(eventData.initialHTML),
   });
 }
 
 function setDefinitions(exercise) {
-  // TODO: implement setDefinitions(exercise)
   try {
-    setModelSolution(exercise.options.model.toString());
+    setModelAnswerFunction(exercise.options.model.toString());
   } catch (error) {
     console.warn(`Could nor set model answer when recording animation: ${error.message}`);
     return false;
@@ -164,12 +171,13 @@ function setDefinitions(exercise) {
 }
 
 function setFinalGrade(eventData) {
-  return submission.addDefinition.score({ ...eventData.score });
+  return submission.addDefinitionSuccesfully.score({ ...eventData.score });
 }
 
-function setModelSolution(modelSolution) {
+// Adds the model answer function as string
+function setModelAnswerFunction(modelSolution) {
   try {
-    submission.addDefinition.modelSolution(modelSolution);
+    submission.addDefinitionSuccesfully.modelAnswerFunction(modelSolution);
   } catch (error) {
     throw error;
   }
@@ -207,26 +215,15 @@ module.exports = {
   setFinalGrade,
 }
 
-},{"../submission/submission":35,"../utils/helperFunctions":37}],3:[function(require,module,exports){
-function customError(message) {
-  const error = new Error(message);
-  console.warn(error);
-  // TODO: add error to submission? & stop recording
-}
-
-module.exports = {
-  customError,
-}
-
-},{}],4:[function(require,module,exports){
+},{"../submission/submission":36,"../utils/helperFunctions":38}],5:[function(require,module,exports){
 const submission = require('./submission/submission');
 const metad_func = require('./metadata/metadata');
 const def_func = require('./definitions/definitions');
 const init_state_func = require('./initialState/initialState');
 const anim_func = require('./animation/animation');
-const services = require('./rest/services');
-// const env = require('./.env.js');
-// let $;
+const services = require('./rest-service/services');
+const helpers = require('./utils/helperFunctions');
+
 let jsav = {};
 let exercise = {};
 // LMS defines: used if grading asynchronously
@@ -240,11 +237,9 @@ function initialize() {
   setSubmissionAndPostUrl();
   submission.reset();
   metad_func.setExerciseMetadata(getMetadataFromURLparams())
-  // $ = window.$
   try {
     $(document).off("jsav-log-event");
     $(document).on("jsav-log-event",  function (event, eventData) {
-      console.log('EVENT DATA', eventData);
       passEvent(eventData)
     });
   } catch (error) {
@@ -253,6 +248,8 @@ function initialize() {
 }
 
 function passEvent(eventData) {
+  console.log('EXERCISE', exercise);
+  console.log('EVENT DATA', eventData);
   switch(eventData.type){
     case 'jsav-init':
       def_func.setExerciseOptions(eventData);
@@ -262,25 +259,29 @@ function passEvent(eventData) {
       exercise = eventData.exercise;
       jsav = exercise.jsav;
       def_func.setDefinitions(exercise);
-      init_state_func.setInitialDataStructures(exercise,passEvent);
+      init_state_func.setInitialDataStructures(exercise);
+      init_state_func.setAnimationDOM(exercise);
       break;
       // Here we handle all array related events
     case String(eventData.type.match(/^jsav-array-.*/)):
-      anim_func.handleArrayEvents(eventData);
+      anim_func.handleArrayEvents(exercise, eventData);
       break;
+    // This is fired by the initialState.js because JSAV sets array ID only on first click
     case 'recorder-set-id':
       init_state_func.setNewId(eventData);
       break;
     case 'jsav-exercise-undo':
-      setTimeout(() => anim_func.handleStateChange(exercise, eventData), 100);
+      setTimeout(() => anim_func.handleGradableStep(exercise, eventData), 100);
       break;
     case 'jsav-exercise-gradeable-step':
-      anim_func.handleStateChange(exercise, eventData);
+      const exerciseDOM = helpers.getExerciseDOM(exercise)
+      anim_func.handleGradableStep(exercise, eventData, exerciseDOM);
       break;
     case 'jsav-exercise-grade-button':
       break;
     case 'jsav-exercise-grade':
-      // We remove it because JSAV logs automatically the model solution when grading
+      // JSAV emits the model answer event when grade is clicked
+      // We remove the last animation step caused by the model answer event
       submission.checkAndFixLastAnimationStep();
       anim_func.handleGradeButtonClick(eventData);
       def_func.setFinalGrade(eventData) && services.sendSubmission(submission.state(), post_url);
@@ -288,21 +289,20 @@ function passEvent(eventData) {
       $(document).off("jsav-log-event");
       break;
     case String(eventData.type.match(/^jsav-exercise-model-.*/)):
-      anim_func.handleModelSolution(exercise, eventData);
+      anim_func.handleModelAnswer(exercise, eventData);
       break;
     case 'jsav-recorded':
       break;
     default:
-      // We don't know what happened
       console.warn('UNKNOWN EVENT', eventData);
   }
 }
 
 // According to https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
 function setSubmissionAndPostUrl() {
-  // LMS submission url
+  // LMS defines: used if grading asynchronously
   submission_url = new URL(location.href).searchParams.get('submission_url');
-  // url where the LMS posts submission data
+  // LMS defines: where to post the submission
   post_url = new URL(location.href).searchParams.get('post_url');
 }
 
@@ -317,55 +317,19 @@ function getMetadataFromURLparams() {
   return { max_points, uid, ordinal_number };
 }
 
-
-function setEventOnWindowClose() {
-  window.addEventListener('beforeunload', (event) => {
-    // Cancel the event as stated by the standard.
-    event.preventDefault();
-    // Chrome requires returnValue to be set.
-    event.returnValue = 'Are you sure you want to leave the exercise?';
-  });
-}
-
-function detach() {
-  $(document).off("jsav-log-event");
-}
-
-window.initializeRecorder = initialize;
-window.detachRecorder = detach;
-
-
-// if(env.EXEC_ENV === 'STATIC') {
-//   initialize();
-//   setEventOnWindowClose();
-// }
-// else if (env.EXEC_ENV === 'STATIC') {
-//   setEventOnHashChange();
-// }
-
-
-
 module.exports = {
   passEvent
 }
 
-// let recorder = {
-//   initialize,
-//   passEvent,
-//   reset: submission.reset
-// };
-//
-// export default recorder;
-
-},{"./animation/animation":1,"./definitions/definitions":2,"./initialState/initialState":5,"./metadata/metadata":6,"./rest/services":33,"./submission/submission":35}],5:[function(require,module,exports){
+},{"./animation/animation":1,"./definitions/definitions":4,"./initialState/initialState":6,"./metadata/metadata":7,"./rest-service/services":34,"./submission/submission":36,"./utils/helperFunctions":38}],6:[function(require,module,exports){
 const recorder = require("../exerciseRecorder.js")
-const error_handler = require('../errors/errors');
 const submission = require('../submission/submission');
+const helpers = require('../utils/helperFunctions');
 
 function setInitialDataStructures(exercise) {
   const initialStructures = exercise.initialStructures;
   const dataStructures = [];
-  // If there is only one data structure, then initialStructures is an object
+  // If initialDataStructures is an Array, it means there is more than one data structure
   if(Array.isArray(initialStructures)) {
     initialStructures.map(ds => getSingleDataStructures(ds))
     .forEach(ds => dataStructures.push(ds));
@@ -373,7 +337,7 @@ function setInitialDataStructures(exercise) {
     dataStructures.push(getSingleDataStructures(initialStructures));
   }
   dataStructures.forEach(dataStructure => {
-    submission.addInitialState.dataStructure(dataStructure);
+    submission.addInitialStateSuccesfully.dataStructure(dataStructure);
   });
 }
 
@@ -420,7 +384,7 @@ function getInitiaStructureType(className) {
     className.includes(rootClassName)
   );
   if(foundClassNames.length !== 1) {
-    error_handler.customError(
+    console.warn(
       `Data structure should have exactly one of the following class names: \n
       ${rootClassNames}\n
       Instead found:\n ${foundClassNames}`
@@ -434,19 +398,25 @@ function getInitiaStructureType(className) {
 function setNewId(eventData) {
   const initialState = submission.state().initialState;
   const dsIndex = initialState.findIndex(ds => ds.id === eventData.tempId);
-  submission.addInitialState.setDsId(dsIndex, eventData.newId);
+  submission.addInitialStateSuccesfully.setDsId(dsIndex, eventData.newId);
+}
+
+function setAnimationDOM(exercise) {
+  const dom = helpers.getExerciseDOM(exercise);
+  submission.addInitialStateSuccesfully.animationDOM(dom);
 }
 
 module.exports = {
   setInitialDataStructures,
   setNewId,
+  setAnimationDOM
 }
 
-},{"../errors/errors":3,"../exerciseRecorder.js":4,"../submission/submission":35}],6:[function(require,module,exports){
+},{"../exerciseRecorder.js":5,"../submission/submission":36,"../utils/helperFunctions":38}],7:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function setExerciseMetadata(metadata) {
-  return submission.addMetadata(metadata);
+  return submission.addMetadataSuccesfully(metadata);
   }
 
 
@@ -454,9 +424,9 @@ module.exports = {
   setExerciseMetadata
 }
 
-},{"../submission/submission":35}],7:[function(require,module,exports){
+},{"../submission/submission":36}],8:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":9}],8:[function(require,module,exports){
+},{"./lib/axios":10}],9:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -638,7 +608,7 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-},{"../core/buildFullPath":15,"../core/createError":16,"./../core/settle":20,"./../helpers/buildURL":24,"./../helpers/cookies":26,"./../helpers/isURLSameOrigin":28,"./../helpers/parseHeaders":30,"./../utils":32}],9:[function(require,module,exports){
+},{"../core/buildFullPath":16,"../core/createError":17,"./../core/settle":21,"./../helpers/buildURL":25,"./../helpers/cookies":27,"./../helpers/isURLSameOrigin":29,"./../helpers/parseHeaders":31,"./../utils":33}],10:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -693,7 +663,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":10,"./cancel/CancelToken":11,"./cancel/isCancel":12,"./core/Axios":13,"./core/mergeConfig":19,"./defaults":22,"./helpers/bind":23,"./helpers/spread":31,"./utils":32}],10:[function(require,module,exports){
+},{"./cancel/Cancel":11,"./cancel/CancelToken":12,"./cancel/isCancel":13,"./core/Axios":14,"./core/mergeConfig":20,"./defaults":23,"./helpers/bind":24,"./helpers/spread":32,"./utils":33}],11:[function(require,module,exports){
 'use strict';
 
 /**
@@ -714,7 +684,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -773,14 +743,14 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":10}],12:[function(require,module,exports){
+},{"./Cancel":11}],13:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -876,7 +846,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"../helpers/buildURL":24,"./../utils":32,"./InterceptorManager":14,"./dispatchRequest":17,"./mergeConfig":19}],14:[function(require,module,exports){
+},{"../helpers/buildURL":25,"./../utils":33,"./InterceptorManager":15,"./dispatchRequest":18,"./mergeConfig":20}],15:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -930,7 +900,7 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":32}],15:[function(require,module,exports){
+},{"./../utils":33}],16:[function(require,module,exports){
 'use strict';
 
 var isAbsoluteURL = require('../helpers/isAbsoluteURL');
@@ -952,7 +922,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
   return requestedURL;
 };
 
-},{"../helpers/combineURLs":25,"../helpers/isAbsoluteURL":27}],16:[function(require,module,exports){
+},{"../helpers/combineURLs":26,"../helpers/isAbsoluteURL":28}],17:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -972,7 +942,7 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":18}],17:[function(require,module,exports){
+},{"./enhanceError":19}],18:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1053,7 +1023,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":12,"../defaults":22,"./../utils":32,"./transformData":21}],18:[function(require,module,exports){
+},{"../cancel/isCancel":13,"../defaults":23,"./../utils":33,"./transformData":22}],19:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1097,7 +1067,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   return error;
 };
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1172,7 +1142,7 @@ module.exports = function mergeConfig(config1, config2) {
   return config;
 };
 
-},{"../utils":32}],20:[function(require,module,exports){
+},{"../utils":33}],21:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1199,7 +1169,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":16}],21:[function(require,module,exports){
+},{"./createError":17}],22:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1221,7 +1191,7 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":32}],22:[function(require,module,exports){
+},{"./../utils":33}],23:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1322,7 +1292,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = defaults;
 
 }).call(this,require('_process'))
-},{"./adapters/http":8,"./adapters/xhr":8,"./helpers/normalizeHeaderName":29,"./utils":32,"_process":38}],23:[function(require,module,exports){
+},{"./adapters/http":9,"./adapters/xhr":9,"./helpers/normalizeHeaderName":30,"./utils":33,"_process":39}],24:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1335,7 +1305,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1408,7 +1378,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":32}],25:[function(require,module,exports){
+},{"./../utils":33}],26:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1424,7 +1394,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1479,7 +1449,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":32}],27:[function(require,module,exports){
+},{"./../utils":33}],28:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1495,7 +1465,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1565,7 +1535,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":32}],29:[function(require,module,exports){
+},{"./../utils":33}],30:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1579,7 +1549,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":32}],30:[function(require,module,exports){
+},{"../utils":33}],31:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1634,7 +1604,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":32}],31:[function(require,module,exports){
+},{"./../utils":33}],32:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1663,7 +1633,7 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
@@ -2009,7 +1979,7 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":23}],33:[function(require,module,exports){
+},{"./helpers/bind":24}],34:[function(require,module,exports){
 const axios = require('axios');
 
 async function sendSubmission(data, url) {
@@ -2030,7 +2000,7 @@ module.exports = {
   sendSubmission
 }
 
-},{"axios":7}],34:[function(require,module,exports){
+},{"axios":8}],35:[function(require,module,exports){
 // TODO: add check to avoid endless loop
 function copyObject(obj) {
   const copy = {};
@@ -2109,7 +2079,7 @@ module.exports = {
   isValidString,
 }
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 const helpers = require('./helpers');
 const valid = require('./validate');
 
@@ -2122,9 +2092,12 @@ const submission =  {
     style: {},
     score: {},
     options: {},
-    modelSolution: "",
+    modelAnswerFunction: "",
   },
-  initialState: [],
+  initialState: {
+    dataStructures: [],
+    animationDOM: ""
+  },
   animation: []
 };
 
@@ -2137,9 +2110,12 @@ function reset() {
     style: {},
     score: {},
     options: {},
-
+    modelAnswerFunction: "",
   };
-  submission.initialState = [];
+  submission.initialState = {
+    dataStructures: [],
+    animationDOM: ""
+  };
   submission.animation = [];
 }
 
@@ -2148,7 +2124,10 @@ function state() {
   const definitions = helpers.copyObject(submission.definitions);
 
   // TODO: change to support new DSs
-  const initialState = submission.initialState.map(ds => helpers.copyObject(ds));
+  const initialState = {
+    dataStructures: submission.initialState.dataStructures.map(ds => helpers.copyObject(ds)),
+    animationDOM: submission.initialState.animationDOM
+  }
   const animation = submission.animation.map(a => helpers.copyObject(a));
   return {
     metadata,
@@ -2162,10 +2141,10 @@ function stateAsJSON() {
   return JSON.stringify(submission);
 }
 
-function addMetadata(metadata) {
+function addMetadataSuccesfully(metadata) {
   if(valid.metadata(metadata)) {
     submission.metadata = { ...metadata };
-    return JSON.stringify(submission.metadata);
+    return true;
   }
   return false;
 }
@@ -2173,15 +2152,14 @@ function addMetadata(metadata) {
 function addStyle(style) {
   if (valid.style(style)) {
     submission.definitions.style = { ...style };
-    return JSON.stringify(submission.definitions.style);
+    return true;
   }
   return false;
 }
 
 function addScore(score) {
-  if (valid.score(score) && exerciseInitialized()) {
+  if (valid.score(score) && exerciseIsInitialized()) {
     submission.definitions.score = { ...score };
-    JSON.stringify(submission.definitions.score);
     return true;
   }
   return false;
@@ -2190,70 +2168,71 @@ function addScore(score) {
 function addOptions(options) {
   if(valid.options(options)) {
     submission.definitions.options = { ...options };
-    return JSON.stringify(submission.definitions.options);
+    return true;
   }
   return false;
 }
 
-function addModelSolution(modelSolution) {
-  try {
-    valid.modelSolution(modelSolution)
-} catch (error) {
-  throw error;
-}
-  submission.definitions.modelSolution = modelSolution;
-  return JSON.stringify(submission.definitions.modelSolution);
+function addModelAnswerFunction(modelAnswerFunction) {
+  if (valid.modelAnswerFunction(modelAnswerFunction)) {
+    submission.definitions.modelAnswerFunction = modelAnswerFunction;
+    return true;
+  }
+  return false;
 }
 
 function addDataStructure(ds) {
   if(valid.dataStructure(ds)) {
-    submission.initialState.push(ds);
-    return JSON.stringify(submission.initialState);
+    submission.initialState.dataStructures.push(ds);
+    return true;
+  }
+  return false;
+}
+
+function addAnimationDOM(dom) {
+  if(valid.animationDOM(dom)) {
+    submission.initialState.animationDOM = dom;
+    return true;
   }
   return false;
 }
 
 function setDsId(dsIndex, dsId) {
   if(valid.dsId(dsId)) {
-    submission.initialState[dsIndex].id = dsId;
-    return JSON.stringify(submission.initialState);
+    submission.initialState.dataStructures[dsIndex].id = dsId;
+    return true;
   }
   return false;
 }
 
 function addDsClick(data) {
-  if(valid.dsClick(data) && exerciseInitialized()) {
+  if(valid.dsClick(data) && exerciseIsInitialized()) {
     submission.animation.push(data);
-    return JSON.stringify(submission.animation);
+    return true;
   }
   return false;
 }
 
-function addStateChange(data) {
-  try {
-    valid.stateChange(data);
-    exerciseInitialized();
-  } catch (error) {
-    throw error;
+function addGradableStep(data) {
+  if (valid.gradableStep(data) && exerciseIsInitialized()) {
+    submission.animation.push(data);
+    return true;
   }
-  submission.animation.push(data);
-  return JSON.stringify(submission.animation);
+  return false;
 }
 
-function addModelSolutionStep(data) {
-  try {
-    valid.stateChange(data);
-  } catch (error) {
-    throw error
+function addModelAnswerStep(data) {
+  if (valid.gradableStep(data)) {
+    submission.animation.push(data);
+    return true;
   }
-  submission.animation.push(data);
-  return JSON.stringify(submission.animation);
+  return false;
 }
 
 function addGradeButtonClick(data) {
-  if(valid.gradeButtonClick(data) && exerciseInitialized()) {
+  if(valid.gradeButtonClick(data) && exerciseIsInitialized()) {
     submission.animation.push(data);
-    return JSON.stringify(submission.animation);
+    return true;
   }
   return false;
 }
@@ -2267,39 +2246,41 @@ function checkAndFixLastAnimationStep() {
       submission.animation.pop();
     }
   } catch (error) {
-    console.warn(`Could not remove model solution from last animation step: ${error}`)
-  }
-}
-
-const exerciseInitialized  = () => {
-  if(submission.initialState.length === 0){
-    let error = new Error('Animation initialization data is missing.\n'
-    + 'Exercise is not being recorded for animation: '
-    + 'did the exercise emit javas-exercise-init event?'
-    + '\nIf you are submitting again the same exercise, try first reloading the page')
-    alert(new Error(error))
-    console.warn(new Error(error));
+    console.warn(`Could not remove model answer from last animation step: ${error}`)
     return false;
   }
   return true;
 }
 
-const addDefinition = {
+function exerciseIsInitialized() {
+  if(submission.initialState.dataStructures.length === 0){
+    let message = 'Animation initialization data is missing.\n'
+    + 'Exercise is not being recorded for animation: '
+    + 'did the exercise emit javas-exercise-init event?'
+    + '\nIf you are submitting again the same exercise, try first reloading the page'
+    console.warn(message);
+    return false;
+  }
+  return true;
+}
+
+const addDefinitionSuccesfully = {
   style: addStyle,
   score: addScore,
   options: addOptions,
-  modelSolution: addModelSolution
+  modelAnswerFunction: addModelAnswerFunction
 };
 
-const addInitialState = {
+const addInitialStateSuccesfully = {
   dataStructure: addDataStructure,
-  setDsId
+  setDsId,
+  animationDOM: addAnimationDOM,
 };
 
-const addAnimationStep = {
+const addAnimationStepSuccesfully = {
   dsClick: addDsClick,
-  stateChange: addStateChange,
-  modelSolution: addModelSolutionStep,
+  gradableStep: addGradableStep,
+  modelAnswerStep: addModelAnswerStep,
   gradeButtonClick: addGradeButtonClick
 };
 
@@ -2308,23 +2289,40 @@ module.exports = {
   reset,
   state,
   stateAsJSON,
-  addMetadata,
-  addDefinition,
-  addInitialState,
-  addAnimationStep,
+  addMetadataSuccesfully,
+  addDefinitionSuccesfully,
+  addInitialStateSuccesfully,
+  addAnimationStepSuccesfully,
   checkAndFixLastAnimationStep
 }
 
-},{"./helpers":34,"./validate":36}],36:[function(require,module,exports){
+},{"./helpers":35,"./validate":37}],37:[function(require,module,exports){
 //TODO: set all try catch statements
 
 const helpers = require('./helpers.js');
 
+function validateOptions(option) {
+  try {
+    const notEmpthy = helpers.objectIsNotEmpthy(option);
+    const notArray = helpers.objectIsNotArray(option);
+    const noInnerObjects = helpers.doesNotContainObjects(option);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating options', err);
+    return false;
+  }
+  return true;
+}
+
 function validateMetadata(metadata) {
-  const notEmpthy = helpers.objectIsNotEmpthy(metadata);
-  const notArray = helpers.objectIsNotArray(metadata);
-  const noInnerObjects = helpers.doesNotContainObjects(metadata);
-  return (notEmpthy && notArray && noInnerObjects);
+  try {
+    const notEmpthy = helpers.objectIsNotEmpthy(metadata);
+    const notArray = helpers.objectIsNotArray(metadata);
+    const noInnerObjects = helpers.doesNotContainObjects(metadata);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating metadata', err);
+    return false;
+  }
+  return true;
 }
 
 function validateStyle(style) {
@@ -2333,34 +2331,55 @@ function validateStyle(style) {
 }
 
 function validateScore(score) {
-  const notEmpthy = helpers.objectIsNotEmpthy(score);
-  const notArray = helpers.objectIsNotArray(score);
-  const noInnerObjects = helpers.doesNotContainObjects(score);
-  return (notEmpthy && notArray && noInnerObjects);
-}
-
-function validateOptions(option) {
-  const notEmpthy = helpers.objectIsNotEmpthy(option);
-  const notArray = helpers.objectIsNotArray(option);
-  const noInnerObjects = helpers.doesNotContainObjects(option);
-  return (notEmpthy && notArray && noInnerObjects);
-}
-
-function validateModelSolution(modelSolution) {
   try {
-    helpers.isValidString(modelSolution);
-  } catch (error) {
-    throw error;
+    const notEmpthy = helpers.objectIsNotEmpthy(score);
+    const notArray = helpers.objectIsNotArray(score);
+    const noInnerObjects = helpers.doesNotContainObjects(score);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating score', err);
+    return false;
+  }
+  return true;
+}
+
+function validateModelAnswerFunction(modelAnswer) {
+  try {
+    helpers.isValidString(modelAnswer);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating model answer function as string', err);
+    return false
   }
   return true;
 }
 
 function validateDataStructure(ds) {
-  return helpers.objectIsNotEmpthy(ds);
+  try {
+    helpers.objectIsNotEmpthy(ds);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating data structure', err);
+    return false;
+  }
+  return true;
 }
 
 function validateDsId(dsId) {
-  return helpers.isValidString(dsId);
+  try {
+    helpers.isValidString(dsId);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating data structure id', err);
+    return false;
+  }
+  return false;
+}
+
+function validateAnimationDOM(dom) {
+  try {
+    helpers.isValidString(dom);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating animation DOM', err);
+    return false
+  }
+  return true;
 }
 
 function validateDsClick(click) {
@@ -2368,7 +2387,7 @@ function validateDsClick(click) {
   return true;
 }
 
-function validateStateChange(data) {
+function validateGradableStep(data) {
   // TODO: implement chackStateChange
   return true;
 }
@@ -2383,15 +2402,16 @@ module.exports = {
   style: validateStyle,
   score: validateScore,
   options: validateOptions,
-  modelSolution: validateModelSolution,
+  modelAnswerFunction: validateModelAnswerFunction,
   dataStructure: validateDataStructure,
   dsClick: validateDsClick,
-  stateChange: validateStateChange,
+  animationDOM: validateAnimationDOM,
+  gradableStep: validateGradableStep,
   gradeButtonClick: validateGradeButtonClick,
   dsId: validateDsId,
 }
 
-},{"./helpers.js":34}],37:[function(require,module,exports){
+},{"./helpers.js":35}],38:[function(require,module,exports){
 // Takes a string containing an html element
 function extractTextByClassName(html, className){
   let text;
@@ -2416,15 +2436,24 @@ function extractTextByTagName(html, tagName){
   return text;
 }
 
-const removeTrimLineBreaks = (string) => string.split(/\r?\n|\r/g).map(e => e.trim()).join('');
+function removeTrimLineBreaks(string){
+  return string.split(/\r?\n|\r/g).map(e => e.trim()).join('');
+}
+
+function getExerciseDOM(exercise) {
+  return exercise.jsav.container[0].innerHTML;
+}
+
 
 const helpers = {
   extractTextByClassName,
-  extractTextByTagName
+  extractTextByTagName,
+  getExerciseDOM
 }
 
 module.exports = helpers;
-},{}],38:[function(require,module,exports){
+
+},{}],39:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2610,4 +2639,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[4]);
+},{}]},{},[5]);
