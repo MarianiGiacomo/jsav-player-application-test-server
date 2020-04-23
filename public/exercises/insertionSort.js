@@ -9,7 +9,7 @@
   let code = av.code(
       "public static void insertionSort(int[] table) {\n"+
       "   for (int i = 0; i < table.length; i++) {\n"+
-      "       int j = i;\n"+
+      "       int j = i+1;\n"+
       "       while (j > 0 && table[j - 1] > table[j]) {\n"+
       "           swap(table, j - 1, j);\n"+
       "           j--;\n"+
