@@ -80,9 +80,8 @@ module.exports = {
 
 },{"../submission/submission":36,"../utils/helperFunctions":38,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
-const helpers = require('../../utils/helperFunctions');
 
-function handleArrayEvents(exercise, eventData) {
+function handleArrayEvents(exercise, eventData, exerciseDOM) {
   const id = eventData.arrayid;
   switch(eventData.type) {
     case 'jsav-array-click':
@@ -95,7 +94,7 @@ function handleArrayEvents(exercise, eventData) {
           values: getArrayValues(exercise.initialStructures, id)
         },
         index: eventData.index,
-        animationDOM: helpers.getExerciseDOM(exercise)
+        animationDOM: exerciseDOM
         }
       try {
         submission.addAnimationStepSuccesfully.dsClick(clickData);
@@ -118,7 +117,7 @@ module.exports = {
   handleArrayEvents
 }
 
-},{"../../submission/submission":36,"../../utils/helperFunctions":38}],3:[function(require,module,exports){
+},{"../../submission/submission":36}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
 
 function handleOpenModelAnswer(exercise, eventData) {
@@ -253,6 +252,7 @@ const helpers = require('./utils/helperFunctions');
 
 let jsav = {};
 let exercise = {};
+let exerciseDOM = "";
 // LMS defines: used if grading asynchronously
 let submission_url;
 // LMS defines: where to post the submission
@@ -291,7 +291,8 @@ function passEvent(eventData) {
       break;
       // Here we handle all array related events
     case String(eventData.type.match(/^jsav-array-.*/)):
-      anim_func.handleArrayEvents(exercise, eventData);
+      exerciseDOM = helpers.getExerciseDOM(exercise)
+      anim_func.handleArrayEvents(exercise, eventData, exerciseDOM);
       break;
     // This is fired by the initialState.js because JSAV sets array ID only on first click
     case 'recorder-set-id':
@@ -301,7 +302,7 @@ function passEvent(eventData) {
       setTimeout(() => anim_func.handleGradableStep(exercise, eventData), 100);
       break;
     case 'jsav-exercise-gradeable-step':
-      const exerciseDOM = helpers.getExerciseDOM(exercise)
+      exerciseDOM = helpers.getExerciseDOM(exercise)
       anim_func.handleGradableStep(exercise, eventData, exerciseDOM);
       break;
     case 'jsav-exercise-grade-button':

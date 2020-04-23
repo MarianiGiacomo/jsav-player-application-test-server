@@ -1,6 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 let $ = window.$;
-let stepcount = 0
+let stepcount = -1
+let showClicks = false;
 
 initialize();
 
@@ -8,8 +9,8 @@ async function initialize() {
   try {
     let submission = await getSubmission();
     if(submission && Object.keys(submission).length > 0){
-      initiateAnimation(submission);
-      setKeyboardListeners();
+      initiateSlideShow(submission);
+      initializeAnimationButtonsListeners(submission);
     } else {
       console.warn('No animation data received')
     }
@@ -31,15 +32,12 @@ async function getSubmission() {
 }
 
 
-function initiateAnimation(submission) {
-  let showClicks = true;
-  let gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
-  let clickSteps = submission.animation.filter(step => step.type === 'click');
-  let animationSteps = showClicks? clickSteps : gradableSteps;
+function initiateSlideShow(submission) {
+  let animationSteps = getAnimationSteps(submission);
   try {
     $('#animation-container')[0].innerHTML = submission.initialState.animationDOM;
     $('#step-forward').on('click', () => {
-      if (stepcount +1 < animationSteps.length -1) {
+      if (stepcount +1 < animationSteps.length) {
         stepcount ++;
         $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
       } else {
@@ -47,11 +45,11 @@ function initiateAnimation(submission) {
       }
     });
     $('#to-beginning').on('click', () => {
-      stepcount = 0;
+      stepcount = -1;
       $('#animation-container')[0].innerHTML = submission.initialState.animationDOM;
     });
     $('#step-backward').on('click', () => {
-      if (stepcount -1 > 0) {
+      if (stepcount > 0) {
         stepcount --;
         $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
       } else {
@@ -68,6 +66,12 @@ function initiateAnimation(submission) {
   }
 }
 
+function getAnimationSteps(submission) {
+  let gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
+  let clickSteps = submission.animation.filter(step => step.type === 'click');
+  return showClicks? clickSteps : gradableSteps;
+}
+
 function exportAnimation(submission) {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(submission));
   newWindow = window.open(dataStr);
@@ -77,49 +81,65 @@ function exportAnimation(submission) {
   // dlAnchorElem.click();
 }
 
-function setKeyboardListeners() {
-  $('#animation-container')[0].click();
-  $("#play-button").on('click', startAutoAnimation)
-  document.onkeydown = function(event) {
-    switch (event.keyCode) {
-      case 37:
-        $('#step-backward')[0].click()
-        break;
-      case 38:
-        $('#to-beginning')[0].click()
-        break;
-      case 39:
-        $('#step-forward')[0].click()
-        break;
-      case 40:
-        $('#to-end')[0].click()
-        break;
+function handlePlayAnimation(animationSteps) {
+  function playAnimation(steps) {
+    let interval = setInterval(stepForward, 1000);
+    function stepForward() {
+      if(stepcount +1 < animationSteps.length) {
+        stepcount ++;
+        $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
+      } else {
+        $('#animation-container')[0].innerHTML = '<h3>Ended</h3>'
+        clearAndResetInterval(interval, $("#play-button"), () => playAnimation(animationSteps));
+        stepcount = -1;
+      }
     }
   }
-}
-
-function startAutoAnimation() {
-  let animator = startAnimator()
-  $("#play-button").off('click', startAutoAnimation)
-  $('#step-forward').click()
-  $("#stop-button").on('click', () => {
-    clearInterval(animator)
-    $('#to-beginning').click();
-    $("#play-button").on('click', startAutoAnimation)
-  })
+  $("#play-button").off('click', playAnimation);
+  if(stepcount === -1) {
+    $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
+    setTimeout(playAnimation(animationSteps));
+  } else {
+    playAnimation(animationSteps)
+  }
   $("#pause-button").on('click', () => {
-    clearInterval(animator)
-    $("#play-button").on('click', startAutoAnimation)
-  })
+      clearAndResetInterval(interval, $("#play-button"), () => handlePlayAnimation(animationSteps));
+  });
 }
 
-function startAnimator() {
-  return setInterval(timedAction, 1000);
+
+
+function clearAndResetInterval(interval, $element, action) {
+  clearInterval(interval)
+  $element.on('click', action)
 }
 
-function timedAction() {
-  $('#step-forward').click();
+function initializeAnimationButtonsListeners(submission) {
+  let animationSteps = getAnimationSteps(submission);
+  $("#play-button").on('click', () => handlePlayAnimation(animationSteps))
 }
+// function startAutoAnimation() {
+//   let animator = startAnimator()
+//   $("#play-button").off('click', startAutoAnimation)
+//   $('#step-forward').click()
+//   $("#stop-button").on('click', () => {
+//     clearInterval(animator)
+//     $('#to-beginning').click();
+//     $("#play-button").on('click', startAutoAnimation)
+//   })
+//   $("#pause-button").on('click', () => {
+//     clearInterval(animator)
+//     $("#play-button").on('click', startAutoAnimation)
+//   })
+// }
+//
+// function startAnimator() {
+//   return setInterval(timedAction, 1000);
+// }
+//
+// function timedAction() {
+//   $('#step-forward').click();
+// }
 
 module.exports = {
   initialize
