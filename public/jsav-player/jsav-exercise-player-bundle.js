@@ -34,7 +34,7 @@ async function getSubmission() {
 function initiateAnimation(submission) {
   let showClicks = true;
   let gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
-  let clickSteps = submission.animation.filter(step => step.type !== 'gradeable-step');
+  let clickSteps = submission.animation.filter(step => step.type === 'click');
   let animationSteps = showClicks? clickSteps : gradableSteps;
   try {
     $('#animation-container')[0].innerHTML = submission.initialState.animationDOM;
@@ -66,6 +66,15 @@ function initiateAnimation(submission) {
     console.warn(err)
     throw err
   }
+}
+
+function exportAnimation(submission) {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(submission));
+  newWindow = window.open(dataStr);
+  // let dlAnchorElem = document.getElementById('downloadAnchorElem');
+  // dlAnchorElem.setAttribute("href",     dataStr     );
+  // dlAnchorElem.setAttribute("download", "scene.json");
+  // dlAnchorElem.click();
 }
 
 function setKeyboardListeners() {

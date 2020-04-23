@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ./index.js"
+    "dev": "nodemon ./index.js",
+    "update-player": "cd jsav-exercise-player && npm run build && cp build/jsav-exercise-player-bundle.js ../public/jsav-player/",
+    "update-recorder": "cd jsav-exercise-recorder && npm run build && cp build/jsav-exercise-recorder-bundle.js ../public/lib/"
   },
   "keywords": [],
   "author": "",
