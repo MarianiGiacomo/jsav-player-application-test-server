@@ -78,6 +78,7 @@ display: none;
   float: right;
   font-size: 28px;
   font-weight: bold;
+  display: contents;
 }
 
 .close:hover,

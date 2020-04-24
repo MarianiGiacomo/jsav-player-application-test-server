@@ -142,29 +142,22 @@ function initiateSlideShow(submission) {
 }
 
 function showJaal(submission) {
-  $("#modal-content").text(JSON.stringify(submission, null, 2));
-  var modal = document.getElementById("myModal");
-  modal.style.display = "block";
-  var span = document.getElementsByClassName("close")[0];
-  span.onclick = function() {
-    modal.style.display = "none";
-  }
-  // let dlAnchorElem = document.getElementById('downloadAnchorElem');
-  // dlAnchorElem.setAttribute("href",     dataStr     );
-  // dlAnchorElem.setAttribute("download", "scene.json");
-  // dlAnchorElem.click();
+  const modalContent = JSON.stringify(submission, null, 2);
+  useModal(modalContent);
 }
 
 function exportAnimation() {
-  let iframe = `<iframe src=${window.location.href}</iframe>`
-  console.log(iframe);
-  $("#modal-content").text(`Add this iframe to an HTML document to import the animation: \n${iframe}` );
-    var modal = document.getElementById("myModal");
-    modal.style.display = "block";
-    var span = document.getElementsByClassName("close")[0];
-    span.onclick = function() {
-      modal.style.display = "none";
-    }
+  const iframe = `<iframe src=${window.location.href}</iframe>`
+  const modalContent = `Add this iframe to an HTML document to import the animation: \n${iframe}`;
+  useModal(modalContent);
+}
+
+function useModal(modalContent) {
+  $("#modal-content").text(modalContent);
+  const modal = $('#myModal');
+  modal.css('display', 'block');
+  const close = $('.close');
+  close.on('click', () => modal.css('display', 'none'));
 }
 
 function initializeAnimation(submission) {
