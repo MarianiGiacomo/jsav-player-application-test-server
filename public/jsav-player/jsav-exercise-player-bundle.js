@@ -1,7 +1,96 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+class DOMAnimation {
+  stepCount = 0;
+  paused = false;
+  constructor(initialStateDOM, animationSteps, canvas) {
+    this.initialStateDOM = initialStateDOM;
+    this.animationSteps = animationSteps;
+    this.canvas = canvas;
+  }
+
+  play(speed) {
+    if(!this.paused) this.reset();
+    this.paused = false;
+    this.interval = setInterval(() => this.stepForward(), speed)
+  }
+
+  stepForward() {
+    if (this.stepCount < this.animationSteps.length) {
+      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationDOM;
+      this.stepCount++;
+    } else {
+      clearInterval(this.interval);
+      this.canvas.innerHTML = '<h3>Ended</h3>';
+    }
+  }
+
+  pause() {
+    this.paused = true;
+    clearInterval(this.interval);
+  }
+
+  reset() {
+    clearInterval(this.interval);
+    this.stepCount = 0;
+    this.canvas.innerHTML = this.initialStateDOM
+  }
+}
+
+module.exports = {
+  DOMAnimation
+}
+
+},{}],2:[function(require,module,exports){
+class DOMSlideShow {
+  stepCount = -1;
+  constructor(initialStateDOM, animationSteps, canvas) {
+    this.initialStateDOM = initialStateDOM;
+    this.animationSteps = animationSteps;
+    this.canvas = canvas;
+  }
+
+  backward() {
+    if (this.stepCount >= 0) {
+      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationDOM;
+      this.stepCount--;
+    } else {
+      this.reset();
+    }
+  }
+
+  forward() {
+    if (this.stepCount < this.animationSteps.length -1) {
+      this.stepCount++;
+      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationDOM;
+    } else {
+      this.canvas.innerHTML = '<h3>Ended</h3>';
+    }
+  }
+
+  toEnd() {
+    this.stepCount = this.animationSteps.length -1;
+    this.canvas.innerHTML = this.animationSteps[this.stepCount].animationDOM;
+  }
+
+  reset() {
+    this.stepCount = -1;
+    this.canvas.innerHTML = this.initialStateDOM;
+  }
+
+}
+
+module.exports = { DOMSlideShow }
+
+},{}],3:[function(require,module,exports){
+const { DOMAnimation } = require('./animation/animation.js');
+const { DOMSlideShow } = require('./animation/slideShow.js');
+
 let $ = window.$;
-let stepcount = -1
 let showClicks = false;
+let initialStateDOM;
+let animationSteps;
+let $animationContainer = $('#animation-container');
+let canvas = $animationContainer[0];
 
 initialize();
 
@@ -9,8 +98,13 @@ async function initialize() {
   try {
     let submission = await getSubmission();
     if(submission && Object.keys(submission).length > 0){
+      initialStateDOM = submission.initialState.animationDOM;
+      animationSteps = getAnimationSteps(submission);
+      canvas.innerHTML = initialStateDOM;
       initiateSlideShow(submission);
-      initializeAnimationButtonsListeners(submission);
+      initializeAnimation(submission);
+      $('#jaal').on('click', () => showJaal(submission));
+      $('#export').on('click', () => exportAnimation());
     } else {
       console.warn('No animation data received')
     }
@@ -31,118 +125,75 @@ async function getSubmission() {
   }
 }
 
-
 function initiateSlideShow(submission) {
-  let animationSteps = getAnimationSteps(submission);
   try {
-    $('#animation-container')[0].innerHTML = submission.initialState.animationDOM;
-    $('#step-forward').on('click', () => {
-      if (stepcount +1 < animationSteps.length) {
-        stepcount ++;
-        $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
-      } else {
-        $('#animation-container')[0].innerHTML = '<h3>Ended</h3>'
-      }
-    });
-    $('#to-beginning').on('click', () => {
-      stepcount = -1;
-      $('#animation-container')[0].innerHTML = submission.initialState.animationDOM;
-    });
-    $('#step-backward').on('click', () => {
-      if (stepcount > 0) {
-        stepcount --;
-        $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
-      } else {
-        $('#animation-container')[0].innerHTML = submission.initialState.animationDOM;
-      }
-    });
-    $('#to-end').on('click', () => {
-      stepcount = animationSteps.length - 1;
-      $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM
-    });
+    var slideShow = new DOMSlideShow(initialStateDOM, animationSteps, canvas);
   } catch (err) {
-    console.warn(err)
-    throw err
+    console.warn(`Error when initializing slideshow: ${err}`);
+  }
+  try {
+    $('#to-beginning').on('click', () => slideShow.reset());
+    $('#step-backward').on('click', () => slideShow.backward());
+    $('#step-forward').on('click', () => slideShow.forward());
+    $('#to-end').on('click', () => slideShow.toEnd());
+  } catch (err) {
+    console.warn(`Error when setting listeners for slideshow: ${err}`);
   }
 }
 
-function getAnimationSteps(submission) {
-  let gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
-  let clickSteps = submission.animation.filter(step => step.type === 'click');
-  return showClicks? clickSteps : gradableSteps;
-}
-
-function exportAnimation(submission) {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(submission));
-  newWindow = window.open(dataStr);
+function showJaal(submission) {
+  $("#modal-content").text(JSON.stringify(submission, null, 2));
+  var modal = document.getElementById("myModal");
+  modal.style.display = "block";
+  var span = document.getElementsByClassName("close")[0];
+  span.onclick = function() {
+    modal.style.display = "none";
+  }
   // let dlAnchorElem = document.getElementById('downloadAnchorElem');
   // dlAnchorElem.setAttribute("href",     dataStr     );
   // dlAnchorElem.setAttribute("download", "scene.json");
   // dlAnchorElem.click();
 }
 
-function handlePlayAnimation(animationSteps) {
-  function playAnimation(steps) {
-    let interval = setInterval(stepForward, 1000);
-    function stepForward() {
-      if(stepcount +1 < animationSteps.length) {
-        stepcount ++;
-        $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
-      } else {
-        $('#animation-container')[0].innerHTML = '<h3>Ended</h3>'
-        clearAndResetInterval(interval, $("#play-button"), () => playAnimation(animationSteps));
-        stepcount = -1;
-      }
+function exportAnimation() {
+  let iframe = `<iframe src=${window.location.href}</iframe>`
+  console.log(iframe);
+  $("#modal-content").text(`Add this iframe to an HTML document to import the animation: \n${iframe}` );
+    var modal = document.getElementById("myModal");
+    modal.style.display = "block";
+    var span = document.getElementsByClassName("close")[0];
+    span.onclick = function() {
+      modal.style.display = "none";
     }
+}
+
+function initializeAnimation(submission) {
+  try {
+    var animation = new DOMAnimation(initialStateDOM, animationSteps, canvas);
+  } catch (err) {
+    console.warn(`Error when initializing animation: ${err}`);
   }
-  $("#play-button").off('click', playAnimation);
-  if(stepcount === -1) {
-    $('#animation-container')[0].innerHTML = animationSteps[stepcount].animationDOM;
-    setTimeout(playAnimation(animationSteps));
-  } else {
-    playAnimation(animationSteps)
+  try {
+    $("#play-button").on('click', () => animation.play(1000));
+    $("#pause-button").on('click', () => animation.pause());
+    $("#reset-button").on('click', () => animation.reset());
+  } catch (err) {
+    console.warn(`Error when setting listeners for animation: ${err}`);
   }
-  $("#pause-button").on('click', () => {
-      clearAndResetInterval(interval, $("#play-button"), () => handlePlayAnimation(animationSteps));
-  });
 }
 
-
-
-function clearAndResetInterval(interval, $element, action) {
-  clearInterval(interval)
-  $element.on('click', action)
+function getAnimationSteps(submission) {
+  try {
+    var gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
+    var clickSteps = submission.animation.filter(step => step.type === 'click');
+  } catch (err) {
+    console.warn(` Failed getting animation steps: ${err}`);
+  }
+  return showClicks? clickSteps : gradableSteps;
 }
-
-function initializeAnimationButtonsListeners(submission) {
-  let animationSteps = getAnimationSteps(submission);
-  $("#play-button").on('click', () => handlePlayAnimation(animationSteps))
-}
-// function startAutoAnimation() {
-//   let animator = startAnimator()
-//   $("#play-button").off('click', startAutoAnimation)
-//   $('#step-forward').click()
-//   $("#stop-button").on('click', () => {
-//     clearInterval(animator)
-//     $('#to-beginning').click();
-//     $("#play-button").on('click', startAutoAnimation)
-//   })
-//   $("#pause-button").on('click', () => {
-//     clearInterval(animator)
-//     $("#play-button").on('click', startAutoAnimation)
-//   })
-// }
-//
-// function startAnimator() {
-//   return setInterval(timedAction, 1000);
-// }
-//
-// function timedAction() {
-//   $('#step-forward').click();
-// }
 
 module.exports = {
   initialize
 }
 
-},{}]},{},[1]);
+},{"./animation/animation.js":1,"./animation/slideShow.js":2}]},{},[3]);
