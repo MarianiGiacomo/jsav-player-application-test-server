@@ -66,7 +66,7 @@ button {
   border-width: 0px 0 0px 36px;
 }
 
-#play-pause-button:hover #stop-button:hover{
+#play-pause-button:hover, #stop-button:hover{
   border-color: transparent transparent transparent #404040;
 }
 
