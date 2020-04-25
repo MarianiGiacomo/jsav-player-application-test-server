@@ -9,7 +9,7 @@ class DOMAnimation {
   }
 
   isPaused() {
-    return this.isPaused;
+    return this.paused;
   }
 
   play(speed) {
@@ -29,8 +29,8 @@ class DOMAnimation {
   }
 
   pause() {
-    this.paused = true;
     clearInterval(this.interval);
+    this.paused = true;
   }
 
   stop() {
