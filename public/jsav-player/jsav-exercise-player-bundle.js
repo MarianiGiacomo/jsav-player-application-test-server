@@ -8,6 +8,10 @@ class DOMAnimation {
     this.canvas = canvas;
   }
 
+  isPaused() {
+    return this.isPaused;
+  }
+
   play(speed) {
     if(!this.paused) this.stop();
     this.paused = false;
