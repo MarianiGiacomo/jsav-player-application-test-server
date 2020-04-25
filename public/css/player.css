@@ -15,7 +15,7 @@
 .import-export, .final-grade, .jsavoutput, .play, .animation-instructions,
 .model-answer, .auto-animation, .slide-show {
   text-align: center;
-  margin: 5px;
+  margin: 2px;
 }
 .jsavoutput .jsavtitle {
   margin: 5px;
@@ -33,6 +33,45 @@
 button {
   margin: 0.5%;
 }
+
+#play-pause-button, #stop-button {
+  border: 0;
+  box-sizing: border-box;
+  width: 0;
+  height: 50px;
+
+  border-color: transparent transparent transparent #202020;
+  transition: 100ms all ease;
+  cursor: pointer;
+
+  border-style: solid;
+}
+
+#stop-button {
+  background: #000000;
+  width: 74px;
+  height: 74px;
+  border-style: solid;
+  border-width: 20px;
+  border-color: #FFFFFF;
+}
+
+#play-pause-button {
+  background: transparent;
+  border-width: 25px 0 25px 36px;
+}
+
+#play-pause-button.pause {
+  border-style: double;
+  border-width: 0px 0 0px 36px;
+}
+
+#play-pause-button:hover #stop-button:hover{
+  border-color: transparent transparent transparent #404040;
+}
+
+
+
 p {
   margin: 5px !important;
 }

@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 class DOMAnimation {
   stepCount = 0;
-  paused = false;
+  paused = true;
   constructor(initialStateDOM, animationSteps, canvas) {
     this.initialStateDOM = initialStateDOM;
     this.animationSteps = animationSteps;
@@ -9,7 +9,7 @@ class DOMAnimation {
   }
 
   play(speed) {
-    if(!this.paused) this.reset();
+    if(!this.paused) this.stop();
     this.paused = false;
     this.interval = setInterval(() => this.stepForward(), speed)
   }
@@ -29,8 +29,9 @@ class DOMAnimation {
     clearInterval(this.interval);
   }
 
-  reset() {
+  stop() {
     clearInterval(this.interval);
+    this.paused = true;
     this.stepCount = 0;
     this.canvas.innerHTML = this.initialStateDOM
   }
@@ -96,6 +97,10 @@ initialize();
 
 async function initialize() {
   try {
+  } catch (err) {
+    console.warn(`Failed setting buttons images: ${err}`);
+  }
+  try {
     let submission = await getSubmission();
     if(submission && Object.keys(submission).length > 0){
       initialStateDOM = submission.initialState.animationDOM;
@@ -116,12 +121,12 @@ async function initialize() {
 async function getSubmission() {
   try {
     const parsedUrl = new URL(window.location.href);
-    const url = parsedUrl.searchParams.get("submission");
-    const response = await fetch(url)
+    const submissionUrl = parsedUrl.searchParams.get("submission");
+    const response = await fetch(submissionUrl)
     const submission = response.json();
     return submission;
   } catch (err) {
-    throw new Error(` Failed getting submission from address ${url}: ${err}`)
+    throw new Error(` Failed getting submission from address ${submissionUrl}: ${err}`)
   }
 }
 
@@ -141,6 +146,34 @@ function initiateSlideShow(submission) {
   }
 }
 
+function initializeAnimation(submission) {
+  const $playPauseButton = $("#play-pause-button");
+  const $stopButton = $("#stop-button");
+  try {
+    var animation = new DOMAnimation(initialStateDOM, animationSteps, canvas);
+  } catch (err) {
+    console.warn(`Error when initializing animation: ${err}`);
+  }
+  try {
+    $playPauseButton.on('click', () => {
+      if(animation.isPaused()) animation.play(1000);
+      else animation.pause();
+      $playPauseButton.toggleClass("pause");
+    });
+    $stopButton.on('click', () => {
+      animation.stop();
+      $playPauseButton.removeClass("pause");
+    });
+  } catch (err) {
+    console.warn(`Error when setting listeners for animation: ${err}`);
+  }
+}
+
+function setButtonImage(isPaused, $button) {
+  if(isPaused) $button.attr('src', `${window.location.origin}/img/play-button.png`);
+  else  $button.attr('src', `${window.location.origin}/img/pause-button.png`);
+}
+
 function showJaal(submission) {
   const modalContent = JSON.stringify(submission, null, 2);
   useModal(modalContent);
@@ -152,29 +185,6 @@ function exportAnimation() {
   useModal(modalContent);
 }
 
-function useModal(modalContent) {
-  $("#modal-content").text(modalContent);
-  const modal = $('#myModal');
-  modal.css('display', 'block');
-  const close = $('.close');
-  close.on('click', () => modal.css('display', 'none'));
-}
-
-function initializeAnimation(submission) {
-  try {
-    var animation = new DOMAnimation(initialStateDOM, animationSteps, canvas);
-  } catch (err) {
-    console.warn(`Error when initializing animation: ${err}`);
-  }
-  try {
-    $("#play-button").on('click', () => animation.play(1000));
-    $("#pause-button").on('click', () => animation.pause());
-    $("#reset-button").on('click', () => animation.reset());
-  } catch (err) {
-    console.warn(`Error when setting listeners for animation: ${err}`);
-  }
-}
-
 function getAnimationSteps(submission) {
   try {
     var gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
@@ -183,6 +193,14 @@ function getAnimationSteps(submission) {
     console.warn(` Failed getting animation steps: ${err}`);
   }
   return showClicks? clickSteps : gradableSteps;
+}
+
+function useModal(modalContent) {
+  $("#modal-content").text(modalContent);
+  const modal = $('#myModal');
+  modal.css('display', 'block');
+  const close = $('.close');
+  close.on('click', () => modal.css('display', 'none'));
 }
 
 module.exports = {
