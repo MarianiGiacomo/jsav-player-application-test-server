@@ -27,8 +27,6 @@ const server = mode === "test"? testServer : exerciseServer;
 const dbURI = mode === "test"? dbConf.dbURI : process.env.DATABASE_URL;
 const dbCollection = "submissions"
 const client = new MongoClient(dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
-const cryptoKey = mode === "test"? dbConf.cryptoKey : process.env.CRYPTOKEY;
-
 
 /**
  *  App Configuration
@@ -46,15 +44,8 @@ redirect(app);
 app.redirect("/exercises/:exercise(.*)", "/", "post")
 
 app.get("/", (req, res) => {
-  const cipher = req.query['submission'];
-  if(cipher) {
-    // const bytes = CryptoJS.AES.decrypt(cipher, cryptoKey);
-    // console.log('bytes: ', bytes);
-    // const idHex = Buffer.from(bytes.words, 'utf8');
-    // const idHex = bytes.toString(CryptoJS.enc.Utf8);
-    // console.log('received cipher', cipher);
-    console.log('received cipher', cipher);
-    const idHex = cipher
+  const idHex = req.query['submission'];
+  if(idHex) {
     console.log('idHex: ', idHex);
     const _id = new ObjectID.createFromHexString(idHex);
     console.log('_id: ', _id)
@@ -81,9 +72,6 @@ app.post("/", (req, res) => {
   .then( resData => {
     let id = resData.insertedId.toHexString();
     console.log('id: ', id);
-    // let cipher = CryptoJS.AES.encrypt(id, cryptoKey).toString();
-    // let cipher = JSON.stringify(utils.encrypt(id));
-    // console.log('sent cipher', cipher)
     let urlParam = `${server}/?submission=${id}`;
     const iframe =
     `<iframe
