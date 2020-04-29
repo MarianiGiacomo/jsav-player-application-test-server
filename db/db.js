@@ -1,6 +1,12 @@
-var dbConf = require("./.dbConf.js");
+function getDbURI(mode) {
+  if (mode === "test") {
+    let dbConf = require("./.dbConf.js");
+    return dbConf.dbURI;
+  }
+  return process.env.DATABASE_URL;
+}
 
 module.exports = {
-  getDbURI: (mode) => mode === "test"? dbConf.dbURI : process.env.DATABASE_URL,
+  getDbURI: getDbURI,
   dbCollection: dbConf.dbCollection
 }
