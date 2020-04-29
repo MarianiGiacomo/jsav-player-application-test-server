@@ -5,6 +5,10 @@
   padding-top: 10px;
 }
 
+.jsavvaluelabel {
+  font-size: xx-small;
+}
+
 .jsavline {
   height: 38px;
 }
@@ -13,7 +17,7 @@
   margin: 5px;
 }
 .import-export, .final-grade, .jsavoutput, .play, .animation-instructions,
-.model-answer, .auto-animation, .slide-show {
+.model-answer, .slide-show {
   text-align: center;
   margin: 2px;
 }
@@ -30,57 +34,75 @@
   padding: 1px 10px;
   border-radius: 5px;
 }
+
 button {
   margin: 0.5%;
 }
 
-#play-pause-button, #stop-button {
-  border: 0;
-  box-sizing: border-box;
-  width: 0;
-  height: 50px;
-
-  border-color: transparent transparent transparent #202020;
-  transition: 100ms all ease;
-  cursor: pointer;
-
-  border-style: solid;
-}
-
-#stop-button {
-  background: #000000;
-  width: 74px;
-  height: 74px;
-  border-style: solid;
-  border-width: 20px;
-  border-color: #FFFFFF;
+.auto-animation {
+  display: flex;
+  justify-content: center;
 }
 
 #play-pause-button {
-  background: transparent;
-  border-width: 25px 0 25px 36px;
+  box-shadow: 2px 5px #888888;
+  padding: 0px;
+  width: 30px;
+  height: 30px;
+  border-top: 15px solid transparent;
+  border-left: 30px solid #202020;
+  border-bottom: 15px solid transparent;
+  border-right: 0px;
+  background-color: transparent;
+  transition: 100ms all ease;
+  cursor: pointer;
+}
+
+#stop-button {
+  box-shadow: 2px 5px #888888;
+  width: 30px;
+  height: 30px;
+  padding: 0px;
+  border: 2px solid white;
+  background-color: #202020;
+}
+
+#stop-button:hover {
+  background-color: #404040;
 }
 
 #play-pause-button.pause {
-  border-style: double;
-  border-width: 0px 0 0px 36px;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  border-top: 0px white;
+  border-left: 10px solid #202020;
+  border-bottom: 0px white;
+  border-right: 10px solid #202020;
 }
 
-#play-pause-button:hover, #stop-button:hover{
+#play-pause-button.pause:hover {
+  background-color: transparent;
+  border-left: 10px solid #404040;
+  border-right: 10px solid #404040;
+}
+
+#play-pause-button:hover {
   border-color: transparent transparent transparent #404040;
 }
-
-
 
 p {
   margin: 5px !important;
 }
+
 #model-answer path {
 display: none;
 }
+
 .no-data {
   text-align: center;
 }
+
 .model-answer {
   min-height: 350px;
 }

@@ -1,4 +1,4 @@
 node_modules
 .firebase*
 *firebase*
-.db.conf.js
+.dbConf.js

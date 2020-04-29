@@ -80,6 +80,7 @@ module.exports = {
 
 },{"../submission/submission":36,"../utils/helperFunctions":38,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
+const helpers = require('../../utils/helperFunctions');
 
 function handleArrayEvents(exercise, eventData, exerciseDOM) {
   const id = eventData.arrayid;
@@ -94,7 +95,7 @@ function handleArrayEvents(exercise, eventData, exerciseDOM) {
           values: getArrayValues(exercise.initialStructures, id)
         },
         index: eventData.index,
-        animationDOM: exerciseDOM
+        animationDOM: helpers.getExerciseDOM(exercise)
         }
       try {
         submission.addAnimationStepSuccesfully.dsClick(clickData);
@@ -117,7 +118,7 @@ module.exports = {
   handleArrayEvents
 }
 
-},{"../../submission/submission":36}],3:[function(require,module,exports){
+},{"../../submission/submission":36,"../../utils/helperFunctions":38}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
 
 function handleOpenModelAnswer(exercise, eventData) {
@@ -267,7 +268,7 @@ function initialize() {
   try {
     $(document).off("jsav-log-event");
     $(document).on("jsav-log-event",  function (event, eventData) {
-      passEvent(eventData)
+      setTimeout(() => passEvent(eventData), 200);
     });
   } catch (error) {
     console.warn(error)
@@ -291,8 +292,7 @@ function passEvent(eventData) {
       break;
       // Here we handle all array related events
     case String(eventData.type.match(/^jsav-array-.*/)):
-      exerciseDOM = helpers.getExerciseDOM(exercise)
-      anim_func.handleArrayEvents(exercise, eventData, exerciseDOM);
+      anim_func.handleArrayEvents(exercise, eventData);
       break;
     // This is fired by the initialState.js because JSAV sets array ID only on first click
     case 'recorder-set-id':

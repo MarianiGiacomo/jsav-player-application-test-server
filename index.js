@@ -12,21 +12,21 @@ const MongoClient = mongodb.MongoClient;
 const ObjectID = mongodb.ObjectID;
 const CryptoJS = require("crypto-js");
 const utils = require("./utils.js");
+const conf = require("./conf.js");
 
 /**
  * App Variables
  */
 const app = express();
-const port = process.env.PORT || "8000";
-const mode = "";
-let dbConf;
-if(mode === "test") dbConf = require("./.db.conf.js");
-const exerciseServer = "https://gentle-fjord-22671.herokuapp.com";
-const testServer = "http://localhost:8000"
-const server = mode === "test"? testServer : exerciseServer;
-const dbURI = mode === "test"? dbConf.dbURI : process.env.DATABASE_URL;
-const dbCollection = "submissions"
-const client = new MongoClient(dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
+const server = conf.server;
+const port = conf.port;
+
+/**
+ * DB Variables
+ */
+const client = new MongoClient(conf.dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
+const dbCollection = conf.dbCollection;
+
 
 /**
  *  App Configuration
