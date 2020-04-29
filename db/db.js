@@ -1,3 +1,5 @@
+const DBCOLLECTION = "submissions";
+
 function getDbURI(mode) {
   if (mode === "test") {
     let dbConf = require("./.dbConf.js");
@@ -8,5 +10,5 @@ function getDbURI(mode) {
 
 module.exports = {
   getDbURI: getDbURI,
-  dbCollection: dbConf.dbCollection
+  dbCollection: DBCOLLECTION
 }
