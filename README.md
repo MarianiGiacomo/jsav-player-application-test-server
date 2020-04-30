@@ -31,3 +31,5 @@ In [`./db/db.js`](https://github.com/MarianiGiacomo/jsav-palyer-application-test
 ## Starting the Server
 - For development: `npm run dev`. Will reload each time you save a change.
 - `npm start`.
+
+![](./public/img/test-application.png)
