@@ -10,7 +10,6 @@ const redirect = require("express-redirect");
 const mongodb = require('mongodb')
 const MongoClient = mongodb.MongoClient;
 const ObjectID = mongodb.ObjectID;
-const CryptoJS = require("crypto-js");
 const utils = require("./utils.js");
 const conf = require("./conf.js");
 
