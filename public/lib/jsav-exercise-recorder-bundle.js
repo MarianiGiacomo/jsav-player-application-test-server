@@ -5,9 +5,9 @@ const modelAnswerAnimation = require('./model-answer/model-answer-animation');
 const helpers = require('../utils/helperFunctions');
 
 
-function handleGradableStep(exercise, eventData, exerciseDOM) {
+function handleGradableStep(exercise, eventData, exerciseHTML) {
   const dataStructuresState = getDataStructuresState(submissionDataStructures(), exercise);
-  if(dataStructuresState.length) addStepToSubmission(eventData, dataStructuresState, exerciseDOM);
+  if(dataStructuresState.length) addStepToSubmission(eventData, dataStructuresState, exerciseHTML);
 }
 
 // Returns an empthy array if there is not state change
@@ -39,7 +39,7 @@ function submissionDataStructures() {
   return dataStructures;
 }
 
-function addStepToSubmission(eventData, dataStructuresState, exerciseDOM) {
+function addStepToSubmission(eventData, dataStructuresState, exerciseHTML) {
   const type = eventData.type === 'jsav-exercise-undo' ? 'undo' : 'gradeable-step';
   const animation = submission.state().animation;
   const currentStep = eventData.currentStep || animation[animation.length - 1].currentStep +1;
@@ -48,7 +48,7 @@ function addStepToSubmission(eventData, dataStructuresState, exerciseDOM) {
     tstamp: eventData.tstamp || new Date(),
     currentStep,
     dataStructuresState,
-    animationDOM: exerciseDOM
+    animationHTML: exerciseHTML
   };
   try {
     submission.addAnimationStepSuccesfully.gradableStep(newState);
@@ -75,14 +75,14 @@ module.exports = {
   handleArrayEvents: arrayAnimation.handleArrayEvents,
   handleGradableStep,
   handleGradeButtonClick,
-  handleModelAnswer: modelAnswerAnimation.handleOpenModelAnswer
+  handleModelAnswer: modelAnswerAnimation.handleModelAnswer
 }
 
-},{"../submission/submission":36,"../utils/helperFunctions":38,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
+},{"../submission/submission":37,"../utils/helperFunctions":39,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 
-function handleArrayEvents(exercise, eventData, exerciseDOM) {
+function handleArrayEvents(exercise, eventData, exerciseHTML) {
   const id = eventData.arrayid;
   switch(eventData.type) {
     case 'jsav-array-click':
@@ -95,7 +95,7 @@ function handleArrayEvents(exercise, eventData, exerciseDOM) {
           values: getArrayValues(exercise.initialStructures, id)
         },
         index: eventData.index,
-        animationDOM: helpers.getExerciseDOM(exercise)
+        animationHTML: helpers.getExerciseHTML(exercise)
         }
       try {
         submission.addAnimationStepSuccesfully.dsClick(clickData);
@@ -118,14 +118,17 @@ module.exports = {
   handleArrayEvents
 }
 
-},{"../../submission/submission":36,"../../utils/helperFunctions":38}],3:[function(require,module,exports){
+},{"../../submission/submission":37,"../../utils/helperFunctions":39}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
+const modelAnswerDefinitions = require("../../definitions/model-answer/model-answer-definitions.js");
 
-function handleOpenModelAnswer(exercise, eventData) {
+function handleModelAnswer(exercise, eventData) {
   const type = String(eventData.type.match(/model.*/))
   const currentStep = eventData.currentStep;
   switch(type) {
     case 'model-init':
+      break;
+    case 'model-recorded':
       break;
     default:
       if(exercise.modelDialog) {
@@ -133,10 +136,10 @@ function handleOpenModelAnswer(exercise, eventData) {
           type,
           tstamp: eventData.tstamp || new Date(),
           currentStep,
-          modelAnswerDOM: exercise.modelDialog[0].innerHTML
+          modelAnswerHTML: exercise.modelDialog[0].innerHTML
         };
         try {
-          submission.addAnimationStepSuccesfully.modelAnswerStep(newStep);
+          submission.addAnimationStepSuccesfully.modelAnswer(newStep);
         } catch (error) {
           console.warn(`Could not add model answer step to animation: ${error}`)
         }
@@ -145,40 +148,15 @@ function handleOpenModelAnswer(exercise, eventData) {
   }
 }
 
-function handleModelAnswerAfterGrade(exercise) {
-  // document.getElementByClassname('jsavmodelpreparing')
-}
-
-function recordModelAnswer(exercise) {
-  const modelStructures = [];
-  if (Array.isArray(exercise.modelStructures)) {
-    exercise.modelStructures.forEach(ds => {
-      modelStructures.push(getSingleModelStructure(ds));
-    })
-  } else {
-    modelStructures.push(getSingleDataStructures(exercise.modelStructures))
-  }
-}
-
-function getModelAnswerStepsDataStructures(exercise) {
-
-}
-
-function getModelAnswerStepsDOM(exercise) {
-
-}
-
-function modelAnswerStepForward(exercise) {
-
-}
 
 module.exports = {
-  handleOpenModelAnswer
+  handleModelAnswer,
 }
 
-},{"../../submission/submission":36}],4:[function(require,module,exports){
+},{"../../definitions/model-answer/model-answer-definitions.js":5,"../../submission/submission":37}],4:[function(require,module,exports){
 const helpers = require('../utils/helperFunctions');
 const submission = require('../submission/submission');
+const modelAnswer = require('./model-answer/model-answer-definitions.js');
 
 function setExerciseOptions(eventData) {
   submission.addDefinitionSuccesfully.options({
@@ -189,7 +167,7 @@ function setExerciseOptions(eventData) {
 
 function setDefinitions(exercise) {
   try {
-    setModelAnswerFunction(exercise.options.model.toString());
+    modelAnswer.recordModelAnswerFunction(exercise.options.model.toString());
   } catch (error) {
     console.warn(`Could nor set model answer when recording animation: ${error.message}`);
     return false;
@@ -199,16 +177,6 @@ function setDefinitions(exercise) {
 
 function setFinalGrade(eventData) {
   return submission.addDefinitionSuccesfully.score({ ...eventData.score });
-}
-
-// Adds the model answer function as string
-function setModelAnswerFunction(modelSolution) {
-  try {
-    submission.addDefinitionSuccesfully.modelAnswerFunction(modelSolution);
-  } catch (error) {
-    throw error;
-  }
-  return true;
 }
 
 function getExerciseTitle(initialHTML) {
@@ -240,9 +208,92 @@ module.exports = {
   setExerciseOptions,
   setDefinitions,
   setFinalGrade,
+  modelAnswer: {
+    recordFunction: modelAnswer.recordModelAnswerFunction,
+    recordStep: modelAnswer.recordModelAnswerStep,
+    progress: modelAnswer.modelAnswerProgress
+  }
 }
 
-},{"../submission/submission":36,"../utils/helperFunctions":38}],5:[function(require,module,exports){
+},{"../submission/submission":37,"../utils/helperFunctions":39,"./model-answer/model-answer-definitions.js":5}],5:[function(require,module,exports){
+const submission = require('../../submission/submission');
+
+// Adds the model answer function as string
+function recordModelAnswerFunction(modelAnswerFunction) {
+  try {
+    submission.addDefinitionSuccesfully.modelAnswerFunction(modelAnswerFunction);
+  } catch (error) {
+    throw error;
+  }
+  return true;
+}
+
+function recordModelAnswerStep(exercise) {
+  const redoArray = exercise.modelav._redo;
+  if(redoArray.length >= 0) {
+    const dataStructures = recordModelAnswerStepDataStructuresValues(exercise);
+    const operations =  redoArray.length === 0? [] : getModelAnswerStepOperations(redoArray[0].operations);
+    const html = getModelAnswerStepHTML();
+    const modelAnswerStep = { dataStructures, operations, html };
+    submission.addDefinitionSuccesfully.modelAnswerStep(modelAnswerStep);
+    if(redoArray.length === 0) return false;
+    return true;
+  }
+  return false;
+}
+
+function recordModelAnswerStepDataStructuresValues(exercise) {
+  const modelStructures = exercise.modelStructures;
+  const stepDSvalues = [];
+  if(Array.isArray(modelStructures)) {
+    modelStructures.forEach((item) => {
+      stepDSvalues.push([ ...item._values ]);
+    });
+  } else {
+    stepDSvalues.push([ ...modelStructures._values ]);
+  }
+  return stepDSvalues;
+}
+
+function getModelAnswerStepOperations(operations) {
+  const stepOperations = []
+  for(const op in operations) {
+    stepOperations.push({
+      args: getFormattedOperationArgs(operations[op].args),
+      effect: operations[op].effect.toString(),
+    })
+  }
+  return stepOperations;
+}
+
+function getFormattedOperationArgs(args) {
+  const formattedArgs = {}
+  for(const arg in args) {
+    formattedArgs[arg] = (typeof(args[arg]) !== 'object' || Array.isArray(args[arg]))?
+    args[arg] : `Converted to string when recording to avoid cyclic object value: ${args[arg].toString()}`
+  }
+  return formattedArgs;
+}
+
+function getModelAnswerStepHTML() {
+  let counterHTML = $('.jsavmodelanswer .jsavcounter').html();
+  let outputHTML = $('.jsavmodelanswer .jsavoutput').html();
+  let canvasHTML = $('.jsavmodelanswer .jsavcanvas').html();
+  return {counterHTML,  outputHTML, canvasHTML };
+}
+
+function modelAnswerProgress() {
+  return submission.state().definitions.modelAnswer.steps.slice(-1)[0].html.counterHTML;
+}
+
+
+module.exports = {
+  recordModelAnswerFunction,
+  recordModelAnswerStep,
+  modelAnswerProgress,
+}
+
+},{"../../submission/submission":37}],6:[function(require,module,exports){
 const submission = require('./submission/submission');
 const metad_func = require('./metadata/metadata');
 const def_func = require('./definitions/definitions');
@@ -253,78 +304,19 @@ const helpers = require('./utils/helperFunctions');
 
 let jsav = {};
 let exercise = {};
-let exerciseDOM = "";
+let exerciseHTML = "";
 // LMS defines: used if grading asynchronously
 let submission_url;
 // LMS defines: where to post the submission
 let post_url;
+const modelAnswer = {
+  opened: false,
+  ready: false,
+  recordingSpeed: 20,
+}
+Object.seal(modelAnswer);
 
 initialize();
-
-function initialize() {
-  setSubmissionAndPostUrl();
-  submission.reset();
-  metad_func.setExerciseMetadata(getMetadataFromURLparams())
-  try {
-    $(document).off("jsav-log-event");
-    $(document).on("jsav-log-event",  function (event, eventData) {
-      setTimeout(() => passEvent(eventData), 200);
-    });
-  } catch (error) {
-    console.warn(error)
-  }
-}
-
-function passEvent(eventData) {
-  console.log('EXERCISE', exercise);
-  console.log('EVENT DATA', eventData);
-  switch(eventData.type){
-    case 'jsav-init':
-      def_func.setExerciseOptions(eventData);
-      metad_func.setExerciseMetadata(eventData);
-      break;
-    case 'jsav-exercise-init':
-      exercise = eventData.exercise;
-      jsav = exercise.jsav;
-      def_func.setDefinitions(exercise);
-      init_state_func.setInitialDataStructures(exercise);
-      init_state_func.setAnimationDOM(exercise);
-      break;
-      // Here we handle all array related events
-    case String(eventData.type.match(/^jsav-array-.*/)):
-      anim_func.handleArrayEvents(exercise, eventData);
-      break;
-    // This is fired by the initialState.js because JSAV sets array ID only on first click
-    case 'recorder-set-id':
-      init_state_func.setNewId(eventData);
-      break;
-    case 'jsav-exercise-undo':
-      setTimeout(() => anim_func.handleGradableStep(exercise, eventData), 100);
-      break;
-    case 'jsav-exercise-gradeable-step':
-      exerciseDOM = helpers.getExerciseDOM(exercise)
-      anim_func.handleGradableStep(exercise, eventData, exerciseDOM);
-      break;
-    case 'jsav-exercise-grade-button':
-      break;
-    case 'jsav-exercise-grade':
-      // JSAV emits the model answer event when grade is clicked
-      // We remove the last animation step caused by the model answer event
-      submission.checkAndFixLastAnimationStep();
-      anim_func.handleGradeButtonClick(eventData);
-      def_func.setFinalGrade(eventData) && services.sendSubmission(submission.state(), post_url);
-      submission.reset();
-      $(document).off("jsav-log-event");
-      break;
-    case String(eventData.type.match(/^jsav-exercise-model-.*/)):
-      anim_func.handleModelAnswer(exercise, eventData);
-      break;
-    case 'jsav-recorded':
-      break;
-    default:
-      console.warn('UNKNOWN EVENT', eventData);
-  }
-}
 
 // According to https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
 function setSubmissionAndPostUrl() {
@@ -345,11 +337,107 @@ function getMetadataFromURLparams() {
   return { max_points, uid, ordinal_number };
 }
 
+function initialize() {
+  setSubmissionAndPostUrl();
+  submission.reset();
+  metad_func.setExerciseMetadata(getMetadataFromURLparams())
+  try {
+    $(document).off("jsav-log-event");
+    $(document).on("jsav-log-event",  function (event, eventData) {
+      setTimeout( () => passEvent(eventData), 50);
+    });
+  } catch (error) {
+    console.warn(error)
+  }
+}
+
+function passEvent(eventData) {
+  console.log('EVENT DATA', eventData);
+  switch(eventData.type){
+    case 'jsav-init':
+      def_func.setExerciseOptions(eventData);
+      metad_func.setExerciseMetadata(eventData);
+      break;
+    case 'jsav-recorded':
+      break;
+    case 'jsav-exercise-init':
+      exercise = eventData.exercise;
+      jsav = exercise.jsav;
+      def_func.setDefinitions(exercise);
+      init_state_func.setInitialDataStructures(exercise);
+      init_state_func.setAnimationHTML(exercise);
+      break;
+      // Here we handle all array related events
+    case String(eventData.type.match(/^jsav-array-.*/)):
+      anim_func.handleArrayEvents(exercise, eventData);
+      break;
+    // This is fired by the initialState.js because JSAV sets array ID only on first click
+    case 'recorder-set-id':
+      init_state_func.setNewId(eventData);
+      break;
+    case 'jsav-exercise-undo':
+      setTimeout(() => anim_func.handleGradableStep(exercise, eventData), 100);
+      break;
+    case 'jsav-exercise-gradeable-step':
+      exerciseHTML = helpers.getExerciseHTML(exercise)
+      anim_func.handleGradableStep(exercise, eventData, exerciseHTML);
+      break;
+    case 'jsav-exercise-model-open':
+      modelAnswer.opened = true;
+      modelAnswer.ready = true;
+    case 'jsav-exercise-model-init':
+      if(!modelAnswer.opened) {
+        exercise.modelav.SPEED = modelAnswer.recordingSpeed -10;
+        modelAnswer.ready = !def_func.modelAnswer.recordStep(exercise);
+        $('.jsavmodelanswer .jsavforward').click();
+        break;
+      }
+    case 'jsav-exercise-model-forward':
+      if(!modelAnswer.opened && !modelAnswer.ready) {
+        setTimeout(() => {
+          modelAnswer.ready = !def_func.modelAnswer.recordStep(exercise);
+          $('.jsavmodelanswer .jsavforward').click();
+        }, modelAnswer.recordingSpeed);
+        break;
+      }
+    case String(eventData.type.match(/^jsav-exercise-model-.*/)):
+      if (modelAnswer.opened) anim_func.handleModelAnswer(exercise, eventData);
+      break;
+    case 'jsav-exercise-grade-button':
+      break;
+    case 'jsav-exercise-grade':
+      if(!modelAnswer.opened) {
+        const popUpText = `Recording model answer steps\n ${def_func.modelAnswer.progress()}`;
+        const popUp = helpers.getPopUp(popUpText);
+        $('body').append(popUp);
+      }
+      finish(eventData);
+      break;
+    default:
+      console.warn('UNKNOWN EVENT', eventData);
+  }
+}
+
+function finish(eventData) {
+  if(modelAnswer.ready) {
+    anim_func.handleGradeButtonClick(eventData);
+    def_func.setFinalGrade(eventData) && services.sendSubmission(submission.state(), post_url);
+    submission.reset();
+    if(!modelAnswer.opened) {
+      $('#popUpDiv').remove();
+    }
+    $(document).off("jsav-log-event");
+  } else {
+    $('#popUpContent').text(`Recording model answer steps\n ${def_func.modelAnswer.progress()}`);
+    setTimeout(() => finish(eventData), modelAnswer.recordingSpeed);
+  }
+}
+
 module.exports = {
   passEvent
 }
 
-},{"./animation/animation":1,"./definitions/definitions":4,"./initialState/initialState":6,"./metadata/metadata":7,"./rest-service/services":34,"./submission/submission":36,"./utils/helperFunctions":38}],6:[function(require,module,exports){
+},{"./animation/animation":1,"./definitions/definitions":4,"./initialState/initialState":7,"./metadata/metadata":8,"./rest-service/services":35,"./submission/submission":37,"./utils/helperFunctions":39}],7:[function(require,module,exports){
 const recorder = require("../exerciseRecorder.js")
 const submission = require('../submission/submission');
 const helpers = require('../utils/helperFunctions');
@@ -370,16 +458,16 @@ function setInitialDataStructures(exercise) {
 }
 
 function getSingleDataStructures(initialStructure) {
-  const domElement = initialStructure.element['0'];
+  const htmlElement = initialStructure.element['0'];
   let tempId;
-  if (!domElement.id) {
+  if (!htmlElement.id) {
     // Arrays miss id untill first click
-    tempId = `tempid-${Math.random().toString().substr(2)}`;
-    setClickListenerWithId(domElement, tempId);
+    tempId = `tempid-${Math.ranhtml().toString().substr(2)}`;
+    setClickListenerWithId(htmlElement, tempId);
   }
-  const id =  (domElement.id === "" || domElement.id === undefined) ? tempId : domElement.id;
+  const id =  (htmlElement.id === "" || htmlElement.id === undefined) ? tempId : htmlElement.id;
   const dataStructure = {
-    type: getInitiaStructureType(domElement.className),
+    type: getInitiaStructureType(htmlElement.className),
     id,
     values: [ ...initialStructure._values ],
     options: { ...initialStructure.options }
@@ -387,14 +475,14 @@ function getSingleDataStructures(initialStructure) {
   return dataStructure;
 }
 
-function setClickListenerWithId(domElement, tempId) {
-  domElement.onclick = ((clickData) => {
+function setClickListenerWithId(htmlElement, tempId) {
+  htmlElement.onclick = ((clickData) => {
     recorder.passEvent({
     type: 'recorder-set-id',
     tempId: tempId,
-    newId: domElement.id
+    newId: htmlElement.id
     })
-    domElement.onclick = null;
+    htmlElement.onclick = null;
   });
 }
 
@@ -429,18 +517,18 @@ function setNewId(eventData) {
   submission.addInitialStateSuccesfully.setDsId(dsIndex, eventData.newId);
 }
 
-function setAnimationDOM(exercise) {
-  const dom = helpers.getExerciseDOM(exercise);
-  submission.addInitialStateSuccesfully.animationDOM(dom);
+function setAnimationHTML(exercise) {
+  const html = helpers.getExerciseHTML(exercise);
+  submission.addInitialStateSuccesfully.animationHTML(html);
 }
 
 module.exports = {
   setInitialDataStructures,
   setNewId,
-  setAnimationDOM
+  setAnimationHTML
 }
 
-},{"../exerciseRecorder.js":5,"../submission/submission":36,"../utils/helperFunctions":38}],7:[function(require,module,exports){
+},{"../exerciseRecorder.js":6,"../submission/submission":37,"../utils/helperFunctions":39}],8:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function setExerciseMetadata(metadata) {
@@ -452,9 +540,9 @@ module.exports = {
   setExerciseMetadata
 }
 
-},{"../submission/submission":36}],8:[function(require,module,exports){
+},{"../submission/submission":37}],9:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":10}],9:[function(require,module,exports){
+},{"./lib/axios":11}],10:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -636,7 +724,7 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-},{"../core/buildFullPath":16,"../core/createError":17,"./../core/settle":21,"./../helpers/buildURL":25,"./../helpers/cookies":27,"./../helpers/isURLSameOrigin":29,"./../helpers/parseHeaders":31,"./../utils":33}],10:[function(require,module,exports){
+},{"../core/buildFullPath":17,"../core/createError":18,"./../core/settle":22,"./../helpers/buildURL":26,"./../helpers/cookies":28,"./../helpers/isURLSameOrigin":30,"./../helpers/parseHeaders":32,"./../utils":34}],11:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -691,7 +779,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":11,"./cancel/CancelToken":12,"./cancel/isCancel":13,"./core/Axios":14,"./core/mergeConfig":20,"./defaults":23,"./helpers/bind":24,"./helpers/spread":32,"./utils":33}],11:[function(require,module,exports){
+},{"./cancel/Cancel":12,"./cancel/CancelToken":13,"./cancel/isCancel":14,"./core/Axios":15,"./core/mergeConfig":21,"./defaults":24,"./helpers/bind":25,"./helpers/spread":33,"./utils":34}],12:[function(require,module,exports){
 'use strict';
 
 /**
@@ -712,7 +800,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -771,14 +859,14 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":11}],13:[function(require,module,exports){
+},{"./Cancel":12}],14:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -874,7 +962,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"../helpers/buildURL":25,"./../utils":33,"./InterceptorManager":15,"./dispatchRequest":18,"./mergeConfig":20}],15:[function(require,module,exports){
+},{"../helpers/buildURL":26,"./../utils":34,"./InterceptorManager":16,"./dispatchRequest":19,"./mergeConfig":21}],16:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -928,7 +1016,7 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":33}],16:[function(require,module,exports){
+},{"./../utils":34}],17:[function(require,module,exports){
 'use strict';
 
 var isAbsoluteURL = require('../helpers/isAbsoluteURL');
@@ -950,7 +1038,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
   return requestedURL;
 };
 
-},{"../helpers/combineURLs":26,"../helpers/isAbsoluteURL":28}],17:[function(require,module,exports){
+},{"../helpers/combineURLs":27,"../helpers/isAbsoluteURL":29}],18:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -970,7 +1058,7 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":19}],18:[function(require,module,exports){
+},{"./enhanceError":20}],19:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1051,7 +1139,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":13,"../defaults":23,"./../utils":33,"./transformData":22}],19:[function(require,module,exports){
+},{"../cancel/isCancel":14,"../defaults":24,"./../utils":34,"./transformData":23}],20:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1095,7 +1183,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   return error;
 };
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1170,7 +1258,7 @@ module.exports = function mergeConfig(config1, config2) {
   return config;
 };
 
-},{"../utils":33}],21:[function(require,module,exports){
+},{"../utils":34}],22:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1197,7 +1285,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":17}],22:[function(require,module,exports){
+},{"./createError":18}],23:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1219,7 +1307,7 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":33}],23:[function(require,module,exports){
+},{"./../utils":34}],24:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1320,7 +1408,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = defaults;
 
 }).call(this,require('_process'))
-},{"./adapters/http":9,"./adapters/xhr":9,"./helpers/normalizeHeaderName":30,"./utils":33,"_process":39}],24:[function(require,module,exports){
+},{"./adapters/http":10,"./adapters/xhr":10,"./helpers/normalizeHeaderName":31,"./utils":34,"_process":40}],25:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1333,7 +1421,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1406,7 +1494,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":33}],26:[function(require,module,exports){
+},{"./../utils":34}],27:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1422,7 +1510,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1477,7 +1565,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":33}],28:[function(require,module,exports){
+},{"./../utils":34}],29:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1493,7 +1581,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1563,7 +1651,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":33}],30:[function(require,module,exports){
+},{"./../utils":34}],31:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1577,7 +1665,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":33}],31:[function(require,module,exports){
+},{"../utils":34}],32:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1632,7 +1720,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":33}],32:[function(require,module,exports){
+},{"./../utils":34}],33:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1661,7 +1749,7 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
@@ -2007,19 +2095,22 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":24}],34:[function(require,module,exports){
+},{"./helpers/bind":25}],35:[function(require,module,exports){
 const axios = require('axios');
 
 async function sendSubmission(data, url) {
   if(url === 'window'){
-    window.parent.postMessage(data, "*");
+    try {
+      window.parent.postMessage(data, "*");
+    } catch (err) {
+      console.warn('Failed posting submission to window', err);
+    }
   }
   else {
     try {
-      console.warn(`Sending submission data to server`)
       const response = await axios.post(`${url}/submissions`, data);
     } catch (err) {
-      console.warn(`Failed sending submission to url ${url}: ${err}`)
+      console.warn(`Failed posting submission to url ${url}: ${err}`)
     }
   }
 }
@@ -2028,7 +2119,7 @@ module.exports = {
   sendSubmission
 }
 
-},{"axios":8}],35:[function(require,module,exports){
+},{"axios":9}],36:[function(require,module,exports){
 // TODO: add check to avoid endless loop
 function copyObject(obj) {
   const copy = {};
@@ -2093,8 +2184,12 @@ function isValidString(string) {
   if(string === null) {
     throw new Error(`value is null: ${string}`);
   }
-  if(string.length === 0) {
-    throw new Error(`Length should be more than 0: ${string}`);
+  return true;
+}
+
+function isNumber(num) {
+  if(isNaN(num)) {
+    throw new Error(`value should be a number: ${num}`);
   }
   return true;
 }
@@ -2105,9 +2200,10 @@ module.exports = {
   objectIsNotArray,
   doesNotContainObjects,
   isValidString,
+  isNumber
 }
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 const helpers = require('./helpers');
 const valid = require('./validate');
 
@@ -2120,11 +2216,14 @@ const submission =  {
     style: {},
     score: {},
     options: {},
-    modelAnswerFunction: "",
+    modelAnswer: {
+      function: "",
+      steps: []
+    },
   },
   initialState: {
     dataStructures: [],
-    animationDOM: ""
+    animationHTML: ""
   },
   animation: []
 };
@@ -2138,11 +2237,14 @@ function reset() {
     style: {},
     score: {},
     options: {},
-    modelAnswerFunction: "",
+    modelAnswer: {
+      function: "",
+      steps: []
+    },
   };
   submission.initialState = {
     dataStructures: [],
-    animationDOM: ""
+    animationHTML: ""
   };
   submission.animation = [];
 }
@@ -2154,7 +2256,7 @@ function state() {
   // TODO: change to support new DSs
   const initialState = {
     dataStructures: submission.initialState.dataStructures.map(ds => helpers.copyObject(ds)),
-    animationDOM: submission.initialState.animationDOM
+    animationHTML: submission.initialState.animationHTML
   }
   const animation = submission.animation.map(a => helpers.copyObject(a));
   return {
@@ -2203,11 +2305,20 @@ function addOptions(options) {
 
 function addModelAnswerFunction(modelAnswerFunction) {
   if (valid.modelAnswerFunction(modelAnswerFunction)) {
-    submission.definitions.modelAnswerFunction = modelAnswerFunction;
+    submission.definitions.modelAnswer.function = modelAnswerFunction;
     return true;
   }
   return false;
 }
+
+function addModelAnswerStep(step) {
+  if(valid.modelAnswerStep(step)) {
+    submission.definitions.modelAnswer.steps.push(step);
+    return true;
+  }
+  return false;
+}
+
 
 function addDataStructure(ds) {
   if(valid.dataStructure(ds)) {
@@ -2217,9 +2328,9 @@ function addDataStructure(ds) {
   return false;
 }
 
-function addAnimationDOM(dom) {
-  if(valid.animationDOM(dom)) {
-    submission.initialState.animationDOM = dom;
+function addAnimationHTML(html) {
+  if(valid.animationHTML(html)) {
+    submission.initialState.animationHTML = html;
     return true;
   }
   return false;
@@ -2249,16 +2360,16 @@ function addGradableStep(data) {
   return false;
 }
 
-function addModelAnswerStep(data) {
-  if (valid.gradableStep(data)) {
+function addGradeButtonClick(data) {
+  if(valid.gradeButtonClick(data) && exerciseIsInitialized()) {
     submission.animation.push(data);
     return true;
   }
   return false;
 }
 
-function addGradeButtonClick(data) {
-  if(valid.gradeButtonClick(data) && exerciseIsInitialized()) {
+function addWatchedModelAnswerStep(data) {
+  if(valid.watchedModelAnswerStep(data) && exerciseIsInitialized()) {
     submission.animation.push(data);
     return true;
   }
@@ -2296,20 +2407,21 @@ const addDefinitionSuccesfully = {
   style: addStyle,
   score: addScore,
   options: addOptions,
-  modelAnswerFunction: addModelAnswerFunction
+  modelAnswerFunction: addModelAnswerFunction,
+  modelAnswerStep: addModelAnswerStep,
 };
 
 const addInitialStateSuccesfully = {
   dataStructure: addDataStructure,
   setDsId,
-  animationDOM: addAnimationDOM,
+  animationHTML: addAnimationHTML,
 };
 
 const addAnimationStepSuccesfully = {
   dsClick: addDsClick,
   gradableStep: addGradableStep,
-  modelAnswerStep: addModelAnswerStep,
-  gradeButtonClick: addGradeButtonClick
+  gradeButtonClick: addGradeButtonClick,
+  modelAnswer: addWatchedModelAnswerStep
 };
 
 
@@ -2324,7 +2436,7 @@ module.exports = {
   checkAndFixLastAnimationStep
 }
 
-},{"./helpers":35,"./validate":37}],37:[function(require,module,exports){
+},{"./helpers":36,"./validate":38}],38:[function(require,module,exports){
 //TODO: set all try catch statements
 
 const helpers = require('./helpers.js');
@@ -2380,6 +2492,13 @@ function validateModelAnswerFunction(modelAnswer) {
   return true;
 }
 
+function validateModelAnswerStep(step) {
+  const validDataStructures = step.dataStructures.every( ds => validateDataStructure(ds));
+  const validOperations = validateModelAnswerStepOperations(step.operations);
+  const validHTML = validateModelAnswerStepHTML(step.html);
+  return validDataStructures && validOperations && validHTML;
+}
+
 function validateDataStructure(ds) {
   try {
     helpers.objectIsNotEmpthy(ds);
@@ -2390,6 +2509,26 @@ function validateDataStructure(ds) {
   return true;
 }
 
+function validateModelAnswerStepHTML(data) {
+  try {
+    helpers.isValidString(data.counterHTML);
+    helpers.isValidString(data.outputHTML);
+    helpers.isValidString(data.canvasHTML);
+  } catch (err) {
+    console.warn(`Exercise Recorder, validating model answer HTML`, err);
+    return false;
+  }
+  return true;
+}
+
+function validateModelAnswerStepOperations(stepOperations) {
+  if (Array.isArray(stepOperations)){
+    return true;
+  }
+  console.warn('Exercise Recorder, validating model answer step operations. It must be an array.');
+  return false;
+}
+
 function validateDsId(dsId) {
   try {
     helpers.isValidString(dsId);
@@ -2397,14 +2536,14 @@ function validateDsId(dsId) {
     console.warn('Exercise Recorder, validating data structure id', err);
     return false;
   }
-  return false;
+  return true;
 }
 
-function validateAnimationDOM(dom) {
+function validateAnimationHTML(html) {
   try {
-    helpers.isValidString(dom);
+    helpers.isValidString(html);
   } catch (err) {
-    console.warn('Exercise Recorder, validating animation DOM', err);
+    console.warn('Exercise Recorder, validating animation HTML', err);
     return false
   }
   return true;
@@ -2420,6 +2559,19 @@ function validateGradableStep(data) {
   return true;
 }
 
+function validateWatchedModelAnswerStep(data) {
+  try {
+    helpers.isValidString(data.type);
+    helpers.isValidString(data.tstamp);
+    helpers.isValidString(data.modelAnswerHTML);
+    helpers.isNumber(data.currentStep);
+  } catch (err) {
+    console.warn(`Exercise Recorder, validating watched model answer step`, err);
+    return false;
+  }
+  return true;
+}
+
 function validateGradeButtonClick(data) {
   // TODO: validateGradeButtonClick
   return true;
@@ -2431,15 +2583,17 @@ module.exports = {
   score: validateScore,
   options: validateOptions,
   modelAnswerFunction: validateModelAnswerFunction,
+  modelAnswerStep: validateModelAnswerStep,
   dataStructure: validateDataStructure,
   dsClick: validateDsClick,
-  animationDOM: validateAnimationDOM,
+  animationHTML: validateAnimationHTML,
   gradableStep: validateGradableStep,
   gradeButtonClick: validateGradeButtonClick,
+  watchedModelAnswerStep: validateWatchedModelAnswerStep,
   dsId: validateDsId,
 }
 
-},{"./helpers.js":35}],38:[function(require,module,exports){
+},{"./helpers.js":36}],39:[function(require,module,exports){
 // Takes a string containing an html element
 function extractTextByClassName(html, className){
   let text;
@@ -2468,20 +2622,57 @@ function removeTrimLineBreaks(string){
   return string.split(/\r?\n|\r/g).map(e => e.trim()).join('');
 }
 
-function getExerciseDOM(exercise) {
+function getExerciseHTML(exercise) {
   return exercise.jsav.container[0].innerHTML;
+}
+
+function getPopUp(text) {
+  const modalDivStyle = {
+    width: "100%",
+    height: "100%",
+    zIndex: 1,
+    display: 'block',
+    position: 'fixed',
+    left: 0,
+    top: 0,
+    overflow: 'auto',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingTop: '100px',
+  }
+  const modalContentStyle = {
+    textAlign: 'center',
+    backgroundColor: '#fefefe',
+    margin: 'auto',
+    padding: '20px',
+    border: '1px solid #888',
+    width: '80%'
+  }
+  const popUpDiv = document.createElement('div');
+  popUpDiv.id = "popUpDiv";
+  const contentDiv = document.createElement('div');
+  contentDiv.id = 'popUpContent';
+  popUpDiv.appendChild(contentDiv);
+  contentDiv.innerText = text;
+  for(key in modalDivStyle) {
+    popUpDiv.style[key] = modalDivStyle[key];
+  }
+  for(key in modalContentStyle) {
+    contentDiv.style[key] = modalContentStyle[key];
+  }
+  return popUpDiv;
 }
 
 
 const helpers = {
   extractTextByClassName,
   extractTextByTagName,
-  getExerciseDOM
+  getExerciseHTML,
+  getPopUp
 }
 
 module.exports = helpers;
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2667,4 +2858,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[5]);
+},{}]},{},[6]);

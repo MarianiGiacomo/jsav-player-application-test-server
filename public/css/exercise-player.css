@@ -12,11 +12,16 @@
 .jsavline {
   height: 38px;
 }
-.jsavcanvas, {
+.jsavcanvas {
   min-height: 250px;
+  min-width: 200px !important;
   margin: 5px;
 }
-.import-export, .final-grade, .jsavoutput, .play, .animation-instructions,
+.views-container {
+  display: flex;
+  justify-content: center;
+}
+.import-export, .final-grade, .jsavoutput, .player-controls, .view-control,
 .model-answer, .slide-show {
   text-align: center;
   margin: 2px;
@@ -33,6 +38,13 @@
   background-color: lightblue;
   padding: 1px 10px;
   border-radius: 5px;
+}
+
+.animation-view, .model-answer-view {
+  width: 600px;
+  border: solid 1px black;
+  margin: 2px;
+  padding: 2px;
 }
 
 button {
@@ -97,6 +109,10 @@ p {
 
 #model-answer path {
 display: none;
+}
+
+.selected {
+  background: #9d9d9d;
 }
 
 .no-data {

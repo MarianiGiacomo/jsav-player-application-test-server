@@ -14,39 +14,73 @@
   <script src="../lib/jquery.transit.js"></script>
 </head>
 <body>
-  <div class="player-content">
-    <div class="auto-animation">
-      <button class="animation-button" id="play-pause-button"></button>
-      <button class="animation-button" id="stop-button"></button>
+
+  <div class="player-controls">
+    <div class="view-control">
+      <button type="button" id="compare-view-button" disabled="" >Compare with model answer</button>
+      <button type="button" id="detailed-view-button" >Detailed view</button>
     </div>
-    <div class="slide-show">
-      <button id="to-beginning">&lt;&lt;</button>
-      <button id="step-backward">&lt;</button>
-      <button id="step-forward">&gt;</button>
-      <button id="to-end">&gt;&gt;</button>
+    <div class="speed-control">
+      <label for="speed">Animation Speed:</label>
+      <input type="range" id="speed" name="speed" value="-1000" step="200" min="-2000" max="-200">
     </div>
-    <div class="import-export">
+  </div>
+
+  <div class="detailed-view">
+    <div class="import-export" style="display: none">
+
       <button id="jaal">JAAL</button>
       <button id="export">Export</button>
     </div>
-    <div class="animation-instructions">
+  </div>
+
+  <div class="views-container">
+    <div class="animation-view">
+      <div class="view-control">
+        <div class="auto-animation">
+          <button class="animation-button" id="play-pause-button"></button>
+          <button class="animation-button" id="stop-button"></button>
+        </div>
+        <div class="slide-show">
+          <button id="to-beginning">&lt;&lt;</button>
+          <button id="step-backward">&lt;</button>
+          <button id="step-forward">&gt;</button>
+          <button id="to-end">&gt;&gt;</button>
+        </div>
+      </div>
+      <div id="animation-container"></div>
+    </div>
+
+    <div class="model-answer-view">
+      <div class="view-control">
+        <div class="auto-animation">
+          <button class="animation-button" id="model-answer-play-pause-button"></button>
+          <button class="animation-button" id="model-answer-stop-button"></button>
+        </div>
+        <div class="slide-show">
+          <button id="model-answer-to-beginning">&lt;&lt;</button>
+          <button id="model-answer-step-backward">&lt;</button>
+          <button id="model-answer-step-forward">&gt;</button>
+          <button id="model-answer-to-end">&gt;&gt;</button>
+        </div>
+      </div>
+      <div id="model-answer-container"></div>
     </div>
   </div>
-  <div id="animation-container">
-  </div>
-  <div class="model-answer">
-    <div id="model-answer"></div>
-  </div>
+
+
+
   <div id="myModal" class="modal">
-  <div class="modal-content">
-    <div>
-      <span class="close">&times;</span>
-    </div>
-    <div>
-      <code><pre id="modal-content"></pre></code>
+    <div class="modal-content">
+      <div>
+        <span class="close">&times;</span>
+      </div>
+      <div>
+        <code><pre id="modal-content"></pre></code>
+      </div>
     </div>
   </div>
-</div>
+
 </body>
   <script src="./jsav-exercise-player-bundle.js"></script>
 </html>
