@@ -18,28 +18,41 @@
   <div class="player-controls">
     <div class="view-control">
       <button type="button" id="compare-view-button" disabled="" >Compare with model answer</button>
-      <button type="button" id="detailed-view-button" >Detailed view</button>
+      <button type="button" id="detailed-view-button" >See all submission actions</button>
     </div>
     <div class="speed-control">
       <label for="speed">Animation Speed:</label>
       <input type="range" id="speed" name="speed" value="-1000" step="200" min="-2000" max="-200">
-    </div>
-  </div>
-
-  <div class="detailed-view">
-    <div class="import-export" style="display: none">
-
       <button id="jaal">JAAL</button>
       <button id="export">Export</button>
     </div>
+  </div>
+
+  <div class="compare-view">
+    <div class="view-control">
+      <div class="auto-animation">
+        <button class="animation-button animation-play-pause" id="compare-view-play-pause-button"></button>
+        <button class="animation-button animation-stop" id="compare-view-stop-button"></button>
+      </div>
+      <div class="slide-show">
+        <button id="compare-view-to-beginning">&lt;&lt;</button>
+        <button id="compare-view-step-backward">&lt;</button>
+        <button id="compare-view-step-forward">&gt;</button>
+        <button id="compare-view-to-end">&gt;&gt;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="detailed-view" style="display: none">
+      <h4>In this mode you can see all the click actions and if the model answer was opened</h4>
   </div>
 
   <div class="views-container">
     <div class="animation-view">
       <div class="view-control">
         <div class="auto-animation">
-          <button class="animation-button" id="play-pause-button"></button>
-          <button class="animation-button" id="stop-button"></button>
+          <button class="animation-button animation-play-pause" id="play-pause-button"></button>
+          <button class="animation-button animation-stop" id="stop-button"></button>
         </div>
         <div class="slide-show">
           <button id="to-beginning">&lt;&lt;</button>
@@ -54,8 +67,8 @@
     <div class="model-answer-view">
       <div class="view-control">
         <div class="auto-animation">
-          <button class="animation-button" id="model-answer-play-pause-button"></button>
-          <button class="animation-button" id="model-answer-stop-button"></button>
+          <button class="animation-button animation-play-pause" id="model-answer-play-pause-button"></button>
+          <button class="animation-button animation-stop" id="model-answer-stop-button"></button>
         </div>
         <div class="slide-show">
           <button id="model-answer-to-beginning">&lt;&lt;</button>

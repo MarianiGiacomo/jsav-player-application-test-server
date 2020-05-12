@@ -36,6 +36,7 @@ function initializeAnimation(initialStateHTML, animationSteps, canvas) {
     $stopButton.on('click', () => {
       animation.stop();
       $playPauseButton.removeClass("pause");
+      $('#to-beginning').click();
     });
   } catch (err) {
     console.warn(`Error when setting listeners for animation: ${err}`);
@@ -47,7 +48,7 @@ module.exports = {
   initializeAnimation
 }
 
-},{"./animation.js":2,"./slideShow.js":3}],2:[function(require,module,exports){
+},{"./animation.js":2,"./slideShow.js":4}],2:[function(require,module,exports){
 class DOMAnimation {
   stepCount = 0;
   paused = true;
@@ -95,6 +96,56 @@ module.exports = {
 }
 
 },{}],3:[function(require,module,exports){
+const { DOMAnimation } = require('./animation.js');
+const { DOMSlideShow } = require('./slideShow.js');
+
+function initializeSlideShow(initialStateHTML, animationSteps, canvas) {
+  try {
+    var slideShow = new DOMSlideShow(initialStateHTML, animationSteps, canvas);
+  } catch (err) {
+    console.warn(`Error when initializing slideshow: ${err}`);
+  }
+  try {
+    $('#model-answer-to-beginning').on('click', () => slideShow.reset());
+    $('#model-answer-step-backward').on('click', () => slideShow.backward());
+    $('#model-answer-step-forward').on('click', () => slideShow.forward());
+    $('#model-answer-to-end').on('click', () => slideShow.toEnd());
+  } catch (err) {
+    console.warn(`Error when setting listeners for slideshow: ${err}`);
+  }
+}
+
+function initializeAnimation(initialStateHTML, animationSteps, canvas) {
+  const $playPauseButton = $("#model-answer-play-pause-button");
+  const $stopButton = $("#model-answer-stop-button");
+  const $speedInput = $('#speed');
+  try {
+    var animation = new DOMAnimation(initialStateHTML, animationSteps, canvas);
+  } catch (err) {
+    console.warn(`Error when initializing animation: ${err}`);
+  }
+  try {
+    $playPauseButton.on('click', () => {
+      if(animation.isPaused()) animation.play($speedInput);
+      else animation.pause();
+      $playPauseButton.toggleClass("pause");
+    });
+    $stopButton.on('click', () => {
+      animation.stop();
+      $playPauseButton.removeClass("pause");
+      $('#model-answer-to-beginning').click();
+    });
+  } catch (err) {
+    console.warn(`Error when setting listeners for animation: ${err}`);
+  }
+}
+
+module.exports = {
+  initializeSlideShow,
+  initializeAnimation
+}
+
+},{"./animation.js":2,"./slideShow.js":4}],4:[function(require,module,exports){
 class DOMSlideShow {
   stepCount = -1;
   constructor(initialStateHTML, animationSteps, canvas) {
@@ -104,9 +155,9 @@ class DOMSlideShow {
   }
 
   backward() {
-    if (this.stepCount >= 0 && this.animationSteps.length > 0) {
-      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
+    if (this.stepCount > 0 && this.animationSteps.length > 0) {
       this.stepCount--;
+      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
     } else {
       this.reset();
     }
@@ -139,10 +190,11 @@ class DOMSlideShow {
 
 module.exports = { DOMSlideShow }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 const { DOMAnimation } = require('./animation/animation.js');
 const { DOMSlideShow } = require('./animation/slideShow.js');
 const animationView = require('./animation/animation-view.js');
+const modelAnswerView = require('./animation/model-answer-view.js');
 
 // let $ = window.$;
 
@@ -156,12 +208,8 @@ async function initialize() {
   try {
     let submission = await getSubmission();
     if(submission && Object.keys(submission).length > 0){
-      const initialStateHTML = submission.initialState.animationHTML;
-      const animationSteps = getAnimationSteps(submission,true);
-      const canvas = $('#animation-container')[0];
-      canvas.innerHTML = initialStateHTML;
-      animationView.initializeSlideShow(initialStateHTML, animationSteps, canvas);
-      animationView.initializeAnimation(initialStateHTML, animationSteps, canvas);
+      initializeAnimationView(submission, false);
+      initializeModelAnswerView(submission);
       setClickHandlers(submission)
     } else {
       console.warn('No animation data received')
@@ -179,22 +227,109 @@ async function getSubmission() {
     const submission = response.json();
     return submission;
   } catch (err) {
-    throw new Error(` Failed getting submission from address ${submissionUrl}: ${err}`)
+    throw new Error(`Failed getting submission from address ${submissionUrl}: ${err}`)
   }
+}
+
+function initializeAnimationView(submission, detailed) {
+  const initialStateHTML = submission.initialState.animationHTML;
+  const animationSteps = getAnimationSteps(submission,detailed);
+  const canvas = $('#animation-container')[0];
+  canvas.innerHTML = initialStateHTML;
+  animationView.initializeSlideShow(initialStateHTML, animationSteps, canvas);
+  animationView.initializeAnimation(initialStateHTML, animationSteps, canvas);
+}
+
+function initializeModelAnswerView(submission) {
+  const modelAnswer = submission.definitions.modelAnswer;
+  if (modelAnswer.steps.length > 0) {
+      var initialStateHTML = getModelAnserInitialHTML(modelAnswer);
+  } else {
+    $('#model-answer-container').html('<h3>No model answer data</h3>');
+    return;
+  }
+  const animationSteps = getModelAnswerSteps(modelAnswer);
+  const canvas = $('#model-answer-container')[0];
+  canvas.innerHTML = initialStateHTML;
+  modelAnswerView.initializeSlideShow(initialStateHTML, animationSteps, canvas);
+  modelAnswerView.initializeAnimation(initialStateHTML, animationSteps, canvas);
+}
+
+function getAnimationSteps(submission, showClicks) {
+  try {
+    var gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
+    var clickSteps = submission.animation.filter(step => step.type !== 'grade');;
+  } catch (err) {
+    console.warn(`Failed getting animation steps: ${err}`);
+  }
+  return showClicks? clickSteps : gradableSteps;
+}
+
+function getModelAnserInitialHTML(modelAnswer) {
+  const counterHTML = modelAnswer.steps[0].html.counterHTML;
+  const outputHTML = modelAnswer.steps[0].html.outputHTML;
+  const canvasHTML = modelAnswer.steps[0].html.canvasHTML;
+  return counterHTML + outputHTML + canvasHTML;
+}
+
+function getModelAnswerSteps(modelAnswer) {
+  const modelAnswerSteps = modelAnswer.steps.map((step, i) => {
+    animationHTML = step.html.counterHTML + step.html.outputHTML + step.html.canvasHTML;
+    return { animationHTML };
+  });
+  modelAnswerSteps.shift();
+  return modelAnswerSteps;
 }
 
 function setClickHandlers(submission) {
   $('#compare-view-button').on('click', (event) => {
     event.target.toggleAttribute('disabled');
     $('#detailed-view-button').attr({'disabled': false});
-    $('.import-export').toggle();
+    $('.detailed-view').toggle();
+    $('.compare-view').toggle();
+    $('.model-answer-view > .view-control').toggle();
+    $('#animation-container').html('');
+    initializeAnimationView(submission,false);
+    initializeModelAnswerView(submission);
   });
 
   $('#detailed-view-button').on('click', (event) => {
     event.target.toggleAttribute('disabled');
-    $('.import-export').toggle();
+    $('.detailed-view').toggle();
+    $('.compare-view').toggle();
+    $('.model-answer-view > .view-control').toggle();
     $('#compare-view-button').attr({'disabled': false});
+    $('#model-answer-container').html('');
+    $('#animation-container').html('');
+    initializeAnimationView(submission,true);
   });
+
+  $('#compare-view-to-beginning').on('click', () => {
+    $('#to-beginning').click();
+    $('#model-answer-to-beginning').click();
+  });
+  $('#compare-view-step-backward').on('click', () => {
+    $('#step-backward').click();
+    $('#model-answer-step-backward').click();
+  });
+  $('#compare-view-step-forward').on('click', () => {
+    $('#step-forward').click();
+    $('#model-answer-step-forward').click();
+  });
+  $('#compare-view-to-end').on('click', () => {
+    $('#to-end').click();
+    $('#model-answer-to-end').click();
+  });
+
+  $('#compare-view-play-pause-button').on('click', () => {
+    $('#play-pause-button').click();
+    $('#model-answer-play-pause-button').click();
+  });
+  $('#compare-view-stop-button').on('click', () => {
+    $('#stop-button').click();
+    $('#model-answer-stop-button').click();
+  });
+
   $('#jaal').on('click', () => showJaal(submission));
   $('#export').on('click', () => exportAnimation());
 }
@@ -210,16 +345,6 @@ function exportAnimation() {
   useModal(modalContent);
 }
 
-function getAnimationSteps(submission, showClicks) {
-  try {
-    var gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
-    var clickSteps = submission.animation.filter(step => step.type !== 'grade');;
-  } catch (err) {
-    console.warn(` Failed getting animation steps: ${err}`);
-  }
-  return showClicks? clickSteps : gradableSteps;
-}
-
 function useModal(modalContent) {
   $("#modal-content").text(modalContent);
   const modal = $('#myModal');
@@ -232,4 +357,4 @@ module.exports = {
   initialize
 }
 
-},{"./animation/animation-view.js":1,"./animation/animation.js":2,"./animation/slideShow.js":3}]},{},[4]);
+},{"./animation/animation-view.js":1,"./animation/animation.js":2,"./animation/model-answer-view.js":3,"./animation/slideShow.js":4}]},{},[5]);

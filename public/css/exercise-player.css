@@ -22,7 +22,7 @@
   justify-content: center;
 }
 .import-export, .final-grade, .jsavoutput, .player-controls, .view-control,
-.model-answer, .slide-show {
+.model-answer, .slide-show, .compare-view, .detailed-view {
   text-align: center;
   margin: 2px;
 }
@@ -56,34 +56,33 @@ button {
   justify-content: center;
 }
 
-#play-pause-button {
+animation-stop {
+  border: 2px solid white;
+}
+
+.animation-button {
+  background-color: #202020;
   box-shadow: 2px 5px #888888;
-  padding: 0px;
   width: 30px;
   height: 30px;
+  padding: 0px;
+  cursor: pointer;
+}
+
+.animation-stop:hover {
+  background-color: #404040;
+}
+
+.animation-play-pause {
   border-top: 15px solid transparent;
   border-left: 30px solid #202020;
   border-bottom: 15px solid transparent;
   border-right: 0px;
   background-color: transparent;
   transition: 100ms all ease;
-  cursor: pointer;
 }
 
-#stop-button {
-  box-shadow: 2px 5px #888888;
-  width: 30px;
-  height: 30px;
-  padding: 0px;
-  border: 2px solid white;
-  background-color: #202020;
-}
-
-#stop-button:hover {
-  background-color: #404040;
-}
-
-#play-pause-button.pause {
+.animation-play-pause.pause {
   padding: 0;
   width: 30px;
   height: 30px;
@@ -93,13 +92,13 @@ button {
   border-right: 10px solid #202020;
 }
 
-#play-pause-button.pause:hover {
+.animation-play-pause.pause:hover {
   background-color: transparent;
   border-left: 10px solid #404040;
   border-right: 10px solid #404040;
 }
 
-#play-pause-button:hover {
+.animation-play-pause:hover {
   border-color: transparent transparent transparent #404040;
 }
 
