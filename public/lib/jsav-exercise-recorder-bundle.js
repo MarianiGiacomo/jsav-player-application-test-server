@@ -168,7 +168,7 @@ function setDefinitions(exercise) {
   try {
     modelAnswer.recordModelAnswerFunction(exercise.options.model.toString());
   } catch (error) {
-    console.warn(`Could nor set model answer when recording animation: ${error.message}`);
+    console.warn(`Could not set model answer when recording animation: ${error.message}`);
     return false;
   }
   return true
@@ -355,7 +355,6 @@ function passEvent(eventData) {
   switch(eventData.type){
     case 'jsav-init':
       def_func.setExerciseOptions(eventData);
-      metad_func.setExerciseMetadata(eventData);
       break;
     case 'jsav-recorded':
       break;
@@ -363,7 +362,7 @@ function passEvent(eventData) {
       exercise = eventData.exercise;
       jsav = exercise.jsav;
       def_func.setDefinitions(exercise);
-      init_state_func.setInitialDataStructures(exercise);
+      init_state_func.setInitialDataStructures(exercise, passEvent);
       init_state_func.setAnimationHTML(exercise);
       break;
       // Here we handle all array related events
@@ -437,51 +436,60 @@ function finish(eventData) {
   }
 }
 
-module.exports = {
-  passEvent
-}
-
 },{"./animation/animation":1,"./definitions/definitions":4,"./initialState/initialState":7,"./metadata/metadata":8,"./rest-service/services":35,"./submission/submission":37,"./utils/helperFunctions":39}],7:[function(require,module,exports){
-const recorder = require("../exerciseRecorder.js")
+const recorder = require('../exerciseRecorder');
 const submission = require('../submission/submission');
 const helpers = require('../utils/helperFunctions');
 
-function setInitialDataStructures(exercise) {
+function setInitialDataStructures(exercise, passEvent) {
   const initialStructures = exercise.initialStructures;
   const dataStructures = [];
   // If initialDataStructures is an Array, it means there is more than one data structure
   if(Array.isArray(initialStructures)) {
-    initialStructures.map(ds => getSingleDataStructures(ds))
+    initialStructures.map(ds => getSingleDataStructures(ds, passEvent))
     .forEach(ds => dataStructures.push(ds));
   } else {
-    dataStructures.push(getSingleDataStructures(initialStructures));
+    dataStructures.push(getSingleDataStructures(initialStructures, passEvent));
   }
   dataStructures.forEach(dataStructure => {
     submission.addInitialStateSuccesfully.dataStructure(dataStructure);
   });
 }
 
-function getSingleDataStructures(initialStructure) {
+function getSingleDataStructures(initialStructure, passEvent) {
   const htmlElement = initialStructure.element['0'];
   let tempId;
   if (!htmlElement.id) {
     // Arrays miss id untill first click
-    tempId = `tempid-${Math.ranhtml().toString().substr(2)}`;
-    setClickListenerWithId(htmlElement, tempId);
+    tempId = `tempid-${Math.random().toString().substr(2)}`;
+    setClickListenerWithId(htmlElement, tempId, passEvent);
   }
   const id =  (htmlElement.id === "" || htmlElement.id === undefined) ? tempId : htmlElement.id;
   const dataStructure = {
     type: getInitiaStructureType(htmlElement.className),
     id,
     values: [ ...initialStructure._values ],
-    options: { ...initialStructure.options }
+    options: getDataStructureOptions(initialStructure.options)
   };
   return dataStructure;
 }
 
-function setClickListenerWithId(htmlElement, tempId) {
+function getDataStructureOptions(options) {
+  const filteredOptions = {};
+  for(const key in options) {
+    const option = options[key];
+    if(typeof(option) === 'function') {
+      filteredOptions[key] = option.name;
+    } else if (typeof(option) !== 'object') {
+      filteredOptions[key] = option;
+    }
+  }
+  return filteredOptions;
+}
+
+function setClickListenerWithId(htmlElement, tempId, passEvent) {
   htmlElement.onclick = ((clickData) => {
-    recorder.passEvent({
+    passEvent({
     type: 'recorder-set-id',
     tempId: tempId,
     newId: htmlElement.id
@@ -517,7 +525,7 @@ function getInitiaStructureType(className) {
 
 function setNewId(eventData) {
   const initialState = submission.state().initialState;
-  const dsIndex = initialState.findIndex(ds => ds.id === eventData.tempId);
+  const dsIndex = initialState.dataStructures.findIndex(ds => ds.id === eventData.tempId);
   submission.addInitialStateSuccesfully.setDsId(dsIndex, eventData.newId);
 }
 
@@ -532,7 +540,7 @@ module.exports = {
   setAnimationHTML
 }
 
-},{"../exerciseRecorder.js":6,"../submission/submission":37,"../utils/helperFunctions":39}],8:[function(require,module,exports){
+},{"../exerciseRecorder":6,"../submission/submission":37,"../utils/helperFunctions":39}],8:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function setExerciseMetadata(metadata) {
@@ -2396,7 +2404,7 @@ function checkAndFixLastAnimationStep() {
 }
 
 function exerciseIsInitialized() {
-  if(submission.initialState.dataStructures.length === 0){
+  if(submission.initialState.animationHTML.length === 0){
     let message = 'Animation initialization data is missing.\n'
     + 'Exercise is not being recorded for animation: '
     + 'did the exercise emit javas-exercise-init event?'
