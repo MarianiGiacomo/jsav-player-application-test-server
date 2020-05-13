@@ -4,6 +4,14 @@ const { DOMSlideShow } = require('./slideShow.js');
 
 function initializeSlideShow(initialStateHTML, animationSteps, canvas) {
   try {
+    $('#to-beginning').off('click');
+    $('#step-backward').off('click');
+    $('#step-forward').off('click');
+    $('#to-end').off('click');
+  } catch (err) {
+    console.warn(`Error when setting listeners for slideshow: ${err}`);
+  }
+  try {
     var slideShow = new DOMSlideShow(initialStateHTML, animationSteps, canvas);
   } catch (err) {
     console.warn(`Error when initializing slideshow: ${err}`);
@@ -22,6 +30,9 @@ function initializeAnimation(initialStateHTML, animationSteps, canvas) {
   const $playPauseButton = $("#play-pause-button");
   const $stopButton = $("#stop-button");
   const $speedInput = $('#speed');
+  $playPauseButton.off('click');
+  $stopButton.off('click');
+  $speedInput.off('click');
   try {
     var animation = new DOMAnimation(initialStateHTML, animationSteps, canvas);
   } catch (err) {
@@ -70,11 +81,11 @@ class DOMAnimation {
 
   stepForward() {
     if (this.stepCount < this.animationSteps.length) {
-      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
+      this.setCanvas()
       this.stepCount++;
     } else {
       clearInterval(this.interval);
-      this.canvas.innerHTML = '<h3>Ended</h3>';
+      this.canvas.animationCanvas.innerHTML = '<h3>Ended</h3>';
     }
   }
 
@@ -87,8 +98,18 @@ class DOMAnimation {
     clearInterval(this.interval);
     this.paused = true;
     this.stepCount = 0;
-    this.canvas.innerHTML = this.initialStateHTML
+    this.canvas.animationCanvas.innerHTML = this.initialStateHTML;
   }
+
+  setCanvas() {
+    if(this.animationSteps[this.stepCount].type.includes('model')) {
+      this.canvas.modelAnswerCanvas.innerHTML = this.animationSteps[this.stepCount].modelAnswerHTML;
+    } else {
+      this.canvas.animationCanvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
+      this.canvas.modelAnswerCanvas.innerHTML = '';
+    }
+  }
+
 }
 
 module.exports = {
@@ -157,7 +178,7 @@ class DOMSlideShow {
   backward() {
     if (this.stepCount > 0 && this.animationSteps.length > 0) {
       this.stepCount--;
-      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
+      this.setCanvas();
     } else {
       this.reset();
     }
@@ -166,16 +187,16 @@ class DOMSlideShow {
   forward() {
     if (this.stepCount < this.animationSteps.length -1) {
       this.stepCount++;
-      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
+      this.setCanvas();
     } else {
-      this.canvas.innerHTML = '<h3>Ended</h3>';
+      this.canvas.animationCanvas.innerHTML = '<h3>Ended</h3>';
     }
   }
 
   toEnd() {
     if (this.animationSteps.length > 0) {
       this.stepCount = this.animationSteps.length -1;
-      this.canvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
+      this.setCanvas();
     } else {
       this.reset();
     }
@@ -183,7 +204,16 @@ class DOMSlideShow {
 
   reset() {
     this.stepCount = -1;
-    this.canvas.innerHTML = this.initialStateHTML;
+    this.canvas.animationCanvas.innerHTML = this.initialStateHTML;
+  }
+
+  setCanvas() {
+    if(this.animationSteps[this.stepCount].type.includes('model')) {
+      this.canvas.modelAnswerCanvas.innerHTML = this.animationSteps[this.stepCount].modelAnswerHTML;
+    } else {
+      this.canvas.animationCanvas.innerHTML = this.animationSteps[this.stepCount].animationHTML;
+      this.canvas.modelAnswerCanvas.innerHTML = '';
+    }
   }
 
 }
@@ -234,8 +264,11 @@ async function getSubmission() {
 function initializeAnimationView(submission, detailed) {
   const initialStateHTML = submission.initialState.animationHTML;
   const animationSteps = getAnimationSteps(submission,detailed);
-  const canvas = $('#animation-container')[0];
-  canvas.innerHTML = initialStateHTML;
+  const canvas = {
+    animationCanvas: $('#animation-container')[0],
+    modelAnswerCanvas: $('#model-answer-container')[0]
+  }
+  canvas.animationCanvas.innerHTML = initialStateHTML;
   animationView.initializeSlideShow(initialStateHTML, animationSteps, canvas);
   animationView.initializeAnimation(initialStateHTML, animationSteps, canvas);
 }
@@ -249,20 +282,23 @@ function initializeModelAnswerView(submission) {
     return;
   }
   const animationSteps = getModelAnswerSteps(modelAnswer);
-  const canvas = $('#model-answer-container')[0];
-  canvas.innerHTML = initialStateHTML;
+  const canvas = {
+    animationCanvas: $('#model-answer-container')[0],
+    modelAnswerCanvas: {}
+  }
+  canvas.modelAnswerCanvas.innerHTML = initialStateHTML;
   modelAnswerView.initializeSlideShow(initialStateHTML, animationSteps, canvas);
   modelAnswerView.initializeAnimation(initialStateHTML, animationSteps, canvas);
 }
 
-function getAnimationSteps(submission, showClicks) {
+function getAnimationSteps(submission, detailed) {
   try {
     var gradableSteps = submission.animation.filter(step => step.type === 'gradeable-step');
-    var clickSteps = submission.animation.filter(step => step.type !== 'grade');;
+    var allSteps = submission.animation.filter(step => !step.type.includes('grad'));;
   } catch (err) {
     console.warn(`Failed getting animation steps: ${err}`);
   }
-  return showClicks? clickSteps : gradableSteps;
+  return detailed? allSteps : gradableSteps;
 }
 
 function getModelAnserInitialHTML(modelAnswer) {
@@ -273,12 +309,12 @@ function getModelAnserInitialHTML(modelAnswer) {
 }
 
 function getModelAnswerSteps(modelAnswer) {
-  const modelAnswerSteps = modelAnswer.steps.map((step, i) => {
+  const animationSteps = modelAnswer.steps.map((step, i) => {
     animationHTML = step.html.counterHTML + step.html.outputHTML + step.html.canvasHTML;
-    return { animationHTML };
+    return { type: '', animationHTML };
   });
-  modelAnswerSteps.shift();
-  return modelAnswerSteps;
+  animationSteps.shift();
+  return animationSteps;
 }
 
 function setClickHandlers(submission) {
@@ -299,7 +335,7 @@ function setClickHandlers(submission) {
     $('.compare-view').toggle();
     $('.model-answer-view > .view-control').toggle();
     $('#compare-view-button').attr({'disabled': false});
-    $('#model-answer-container').html('');
+    $('#model-answer-container').html('<h3>Model answer steps visulized during the exercise</h3>');
     $('#animation-container').html('');
     initializeAnimationView(submission,true);
   });
