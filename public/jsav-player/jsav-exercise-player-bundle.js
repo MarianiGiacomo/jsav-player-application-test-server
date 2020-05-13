@@ -286,7 +286,7 @@ function initializeModelAnswerView(submission) {
     animationCanvas: $('#model-answer-container')[0],
     modelAnswerCanvas: {}
   }
-  canvas.modelAnswerCanvas.innerHTML = initialStateHTML;
+  canvas.animationCanvas.innerHTML = initialStateHTML;
   modelAnswerView.initializeSlideShow(initialStateHTML, animationSteps, canvas);
   modelAnswerView.initializeAnimation(initialStateHTML, animationSteps, canvas);
 }
