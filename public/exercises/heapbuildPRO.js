@@ -2,12 +2,12 @@
 /*global alert: true, ODSA, PARAMS */
 $(document).ready(function () {
   // Process about button: Pop up a message with an Alert
-  function about() {
-    alert(ODSA.AV.aboutstring(interpret(".avTitle"), interpret("av_Authors")));
-  }
+  // function about() {
+  //   alert(ODSA.AV.aboutstring(interpret(".avTitle"), interpret("av_Authors")));
+  // }
 
   // Set click handlers
-  $("#about").click(about);
+  // $("#about").click(about);
 
   function init() {
     var nodeNum = 10;
@@ -27,7 +27,7 @@ $(document).ready(function () {
     // Log the initial state of the exercise
     var exInitData = {};
     exInitData.gen_array = initData;
-    ODSA.AV.logExerciseInit(exInitData);
+    // ODSA.AV.logExerciseInit(exInitData);
 
     bh = av.ds.binheap(initData, {heapify: false});
     swapIndex = av.variable(-1);
@@ -49,9 +49,9 @@ $(document).ready(function () {
       // The pseudocode calls heapify(i) for h-1 ... 0 where
       // h = Math.floor(modelbh.size() / 2), while the JavaScript implementation
       // must be called for h ... 1.
-      modeljsav.umsg(interpret("av_c1") + (i - 1) + ").");
+      // modeljsav.umsg(interpret("av_c1") + (i - 1) + ").");
       modeljsav.step();
-      modeljsav.umsg(interpret("av_c2a") + (i - 1) + interpret("av_c2b"));
+      // modeljsav.umsg(interpret("av_c2a") + (i - 1) + interpret("av_c2b"));
       modeljsav.step();
       modelbh.heapify(i);
     }
@@ -97,25 +97,30 @@ $(document).ready(function () {
   var initData,
       bh,
       swapIndex,
-      pseudo,
+      pseudo
 
       // Load the configurations created by odsaAV.js
-      config = ODSA.UTILS.loadConfig(),
-      interpret = config.interpreter,
-      code = config.code,
-      codeOptions = {after: {element: $(".instructions")}, visible: true},
-      settings = config.getSettings();     // Settings for the AV
+      // config = ODSA.UTILS.loadConfig(),
+      // interpret = config.interpreter,
+      // code = config.code,
+      // codeOptions = {after: {element: $(".instructions")}, visible: true},
+      // settings = config.getSettings();     // Settings for the AV
+      // // console.log('ODSA CODE', code);
+      // // console.log('ODSA CONFIG', config);
 
   // Create a JSAV instance
-  var av = new JSAV($('.avcontainer'), {settings: settings});
+  // var av = new JSAV($('.avcontainer'), {settings: settings});
+
+  var av = new JSAV($('.avcontainer'));
 
   av.recorded();
 
   // show a JSAV code instance only if the code is defined in the parameter
   // and the parameter value is not "none"
-  if (PARAMS["JXOP-code"] && code) {
-    pseudo = av.code($.extend(codeOptions, code));
-  }
+  // if (PARAMS["JXOP-code"] && code) {
+  //   pseudo = av.code($.extend(codeOptions, code));
+  // }
+
 
   $(".jsavcontainer").on("click", ".jsavindex", function () {
     var index = $(this).parent(".jsavarray").find(".jsavindex").index(this);
