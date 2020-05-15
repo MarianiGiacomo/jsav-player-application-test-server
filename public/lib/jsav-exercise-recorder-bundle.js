@@ -3,10 +3,13 @@ const submission = require('../submission/submission');
 const arrayAnimation = require('./array/array-animation');
 const modelAnswerAnimation = require('./model-answer/model-answer-animation');
 const helpers = require('../utils/helperFunctions');
+const dataStructures = require('../dataStructures/dataStructures');
 
 
-function handleGradableStep(exercise, eventData, exerciseHTML) {
-  const dataStructuresState = getDataStructuresState(submissionDataStructures(), exercise);
+function handleGradableStep(exercise, eventData, passEvent) {
+  const exerciseHTML = helpers.getExerciseHTML(exercise)
+  // const dataStructuresState = getDataStructuresState(submissionDataStructures(), exercise);
+  const dataStructuresState = dataStructures.getDataStructuresFromExercise(exercise, passEvent)
   if(dataStructuresState.length) addStepToSubmission(eventData, dataStructuresState, exerciseHTML);
 }
 
@@ -63,7 +66,8 @@ function handleGradeButtonClick(eventData) {
       type: "grade",
       tstamp: eventData.tstamp,
       currentStep: eventData.currentStep,
-      score: { ...eventData.score }
+      score: { ...eventData.score },
+
     });
   } catch (error) {
     console.warn(`Could not add grade button click to animation: ${error}`)
@@ -77,7 +81,7 @@ module.exports = {
   handleModelAnswer: modelAnswerAnimation.handleModelAnswer
 }
 
-},{"../submission/submission":37,"../utils/helperFunctions":39,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
+},{"../dataStructures/dataStructures":5,"../submission/submission":40,"../utils/helperFunctions":42,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 
@@ -86,7 +90,7 @@ function handleArrayEvents(exercise, eventData, exerciseHTML) {
   switch(eventData.type) {
     case 'jsav-array-click':
       const clickData = {
-        type: 'click',
+        type: 'array-click',
         tstamp: eventData.tstamp,
         currentStep: eventData.currentStep,
         dataStructure: {
@@ -117,7 +121,7 @@ module.exports = {
   handleArrayEvents
 }
 
-},{"../../submission/submission":37,"../../utils/helperFunctions":39}],3:[function(require,module,exports){
+},{"../../submission/submission":40,"../../utils/helperFunctions":42}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const modelAnswerDefinitions = require("../../definitions/model-answer/model-answer-definitions.js");
 
@@ -152,7 +156,146 @@ module.exports = {
   handleModelAnswer,
 }
 
-},{"../../definitions/model-answer/model-answer-definitions.js":5,"../../submission/submission":37}],4:[function(require,module,exports){
+},{"../../definitions/model-answer/model-answer-definitions.js":8,"../../submission/submission":40}],4:[function(require,module,exports){
+const tree = require('../tree/tree');
+
+function isBinaryHeap(initialStructure) {
+  return Object.keys(initialStructure).includes('_tree' && '_treenodes');
+}
+
+function getBinaryTreeFromDOM(initialStructure) {
+  const rootNode = {
+    id: initialStructure._tree.rootnode.element[0].id,
+    htmlInnerText: initialStructure._tree.rootnode.element[0].innerText,
+    childNodes: tree.childNodes(initialStructure._tree.rootnode)
+  }
+  return {
+    rootNode,
+    id: initialStructure._tree.element[0].id,
+    htmlInnerText: initialStructure._tree.element[0].innerText
+  }
+}
+
+module.exports = {
+  isBinHeap: isBinaryHeap,
+  getBinHeap: getBinaryTreeFromDOM
+}
+
+},{"../tree/tree":6}],5:[function(require,module,exports){
+const binaryHeap = require('./binaryHeap/binaryHeap');
+
+function getDataStructuresFromExercise(exercise, passEvent) {
+  const initialStructures = exercise.initialStructures;
+  const dataStructures = [];
+  // If initialDataStructures is an Array, it means there is more than one data structure
+  if(Array.isArray(initialStructures)) {
+    return initialStructures.map(ds => getSingleDataStructure(ds, missingIdHandlingFunctionss))
+  }
+  return [getSingleDataStructure(initialStructures, passEvent)];
+}
+
+function getSingleDataStructure(initialStructure, passEvent) {
+  const htmlElement = initialStructure.element['0'];
+  // DS might miss id untill first click
+  let id = !htmlElement.id ? handleMissingId(htmlElement, passEvent) : htmlElement.id;
+  let type =  getDataStructureType(htmlElement.className);
+  if(type === 'array' && binaryHeap.isBinHeap(initialStructure)) {
+    return {
+      type: 'binaryHeap',
+      id,
+      values: [ ...initialStructure._values ],
+      tree: binaryHeap.getBinHeap(initialStructure),
+    }
+  }
+  return {
+    type: type,
+    id,
+    values: [ ...initialStructure._values ],
+  };
+}
+
+function handleMissingId(htmlElement, passEvent) {
+  tempId = `tempid-${Math.random().toString().substr(2)}`;
+  htmlElement.onclick = ((clickData) => {
+    passEvent({
+    type: 'recorder-set-id',
+    tempId: tempId,
+    newId: htmlElement.id
+    })
+    htmlElement.onclick = null;
+  });
+  return tempId;
+}
+
+function getDataStructureType(className) {
+  const rootClassNames =
+  [
+    'jsavarray',
+    'jsavtree',
+    'jsavgraph',
+    'jsavlist',
+    'jsavmatrix'
+  ];
+  const type = rootClassNames.find(name =>
+    className.includes(name)
+  )
+  if(!type) {
+    console.warn(
+      `Data structure should have exactly one of the following class names: \n
+      ${rootClassNames}\n
+      Instead found:\n ${className}`
+    );
+    return;
+  }
+  // TODO: check subclasses of trees
+  return type.replace('jsav','');
+}
+
+module.exports = {
+  getDataStructuresFromExercise
+}
+
+},{"./binaryHeap/binaryHeap":4}],6:[function(require,module,exports){
+
+function getChildNodesFromDOM(node) {
+  if(!node.childnodes || node.childnodes.length == 0) {
+    return {
+      id: node.element[0].id,
+      edgeToParent: getEdge(node._edgetoparent),
+      htmlInnerText: node.element[0].innerText
+    }
+  }
+  return node.childnodes.map(node => {
+    return {
+      id: node.element[0].id,
+      htmlInnerText: node.element[0].innerText,
+      edgeToParent: getEdge(node._edgetoparent),
+      childNodes: getChildNodesFromDOM(node)
+    }
+  });
+}
+
+function getEdge(edge) {
+  return {
+    startNode: getNodeFromDOM(edge.startnode),
+    endNode: getNodeFromDOM(edge.endnode)
+  }
+}
+
+function getNodeFromDOM(node) {
+  return {
+    id: node.element[0].id,
+    htmlInnerText: node.element[0].innerText
+  }
+}
+
+module.exports = {
+  childNodes: getChildNodesFromDOM,
+  edge: getEdge,
+  node: getNodeFromDOM
+}
+
+},{}],7:[function(require,module,exports){
 const helpers = require('../utils/helperFunctions');
 const submission = require('../submission/submission');
 const modelAnswer = require('./model-answer/model-answer-definitions.js');
@@ -214,7 +357,7 @@ module.exports = {
   }
 }
 
-},{"../submission/submission":37,"../utils/helperFunctions":39,"./model-answer/model-answer-definitions.js":5}],5:[function(require,module,exports){
+},{"../submission/submission":40,"../utils/helperFunctions":42,"./model-answer/model-answer-definitions.js":8}],8:[function(require,module,exports){
 const submission = require('../../submission/submission');
 
 // Adds the model answer function as string
@@ -292,7 +435,7 @@ module.exports = {
   modelAnswerProgress,
 }
 
-},{"../../submission/submission":37}],6:[function(require,module,exports){
+},{"../../submission/submission":40}],9:[function(require,module,exports){
 const submission = require('./submission/submission');
 const metad_func = require('./metadata/metadata');
 const def_func = require('./definitions/definitions');
@@ -378,8 +521,7 @@ function passEvent(eventData) {
       setTimeout(() => anim_func.handleGradableStep(exercise, eventData, exerciseHTML), 100);
       break;
     case 'jsav-exercise-gradeable-step':
-      exerciseHTML = helpers.getExerciseHTML(exercise)
-      anim_func.handleGradableStep(exercise, eventData, exerciseHTML);
+      anim_func.handleGradableStep(exercise, eventData, passEvent);
       break;
     case 'jsav-exercise-model-open':
       modelAnswer.opened = true;
@@ -436,43 +578,148 @@ function finish(eventData) {
   }
 }
 
-},{"./animation/animation":1,"./definitions/definitions":4,"./initialState/initialState":7,"./metadata/metadata":8,"./rest-service/services":35,"./submission/submission":37,"./utils/helperFunctions":39}],7:[function(require,module,exports){
+},{"./animation/animation":1,"./definitions/definitions":7,"./initialState/initialState":10,"./metadata/metadata":11,"./rest-service/services":38,"./submission/submission":40,"./utils/helperFunctions":42}],10:[function(require,module,exports){
 const recorder = require('../exerciseRecorder');
 const submission = require('../submission/submission');
 const helpers = require('../utils/helperFunctions');
+const dataStructures = require('../dataStructures/dataStructures');
 
 function setInitialDataStructures(exercise, passEvent) {
   const initialStructures = exercise.initialStructures;
-  const dataStructures = [];
-  // If initialDataStructures is an Array, it means there is more than one data structure
-  if(Array.isArray(initialStructures)) {
-    initialStructures.map(ds => getSingleDataStructures(ds, passEvent))
-    .forEach(ds => dataStructures.push(ds));
-  } else {
-    dataStructures.push(getSingleDataStructures(initialStructures, passEvent));
-  }
-  dataStructures.forEach(dataStructure => {
+  dataStructures.getDataStructuresFromExercise(exercise, passEvent).forEach(dataStructure => {
     submission.addInitialStateSuccesfully.dataStructure(dataStructure);
   });
 }
 
-function getSingleDataStructures(initialStructure, passEvent) {
-  const htmlElement = initialStructure.element['0'];
-  let tempId;
-  if (!htmlElement.id) {
-    // Arrays miss id untill first click
-    tempId = `tempid-${Math.random().toString().substr(2)}`;
-    setClickListenerWithId(htmlElement, tempId, passEvent);
-  }
-  const id =  (htmlElement.id === "" || htmlElement.id === undefined) ? tempId : htmlElement.id;
-  const dataStructure = {
-    type: getInitiaStructureType(htmlElement.className),
-    id,
-    values: [ ...initialStructure._values ],
-    options: getDataStructureOptions(initialStructure.options)
-  };
-  return dataStructure;
-}
+// function checkMissingIds(initialStructures, passEvent) {
+//   if(Array.isArray(initialStructures)) {
+//     initialStructures.forEach(ds => {
+//       const htmlElement = ds.element['0'];
+//       handleMissingId(htmlElement, passEvent)
+//     })
+//   } else {
+//     const htmlElement = initialStructures.element['0'];
+//     handleMissingId(htmlElement, passEvent)
+//   }
+// }
+
+// function getSingleDataStructure(initialStructure, passEvent) {
+//   const htmlElement = initialStructure.element['0'];
+//   let id;
+//   if (!htmlElement.id) {
+//     // Arrays miss id untill first click
+//     id = handleMissingId(htmlElement, passEvent);
+//   }
+//   let type =  getInitiaStructureType(htmlElement.className);
+//   if(type === 'array' && isBinaryHeap(initialStructure)) {
+//     type = 'binaryHeap';
+//     return {
+//       type: type,
+//       id,
+//       values: [ ...initialStructure._values ],
+//       tree: getBinaryTreeFromDOM(initialStructure),
+//       options: getDataStructureOptions(initialStructure.options)
+//     }
+//   }
+//   return {
+//     type: type,
+//     id,
+//     values: [ ...initialStructure._values ],
+//     options: getDataStructureOptions(initialStructure.options)
+//   };
+// }
+
+// function handleMissingId(htmlElement, passEvent) {
+//   tempId = `tempid-${Math.random().toString().substr(2)}`;
+//   setClickListenerWithId(htmlElement, tempId, passEvent);
+//   return tempId;
+// }
+
+// function setClickListenerWithId(htmlElement, tempId, passEvent) {
+//   htmlElement.onclick = ((clickData) => {
+//     passEvent({
+//     type: 'recorder-set-id',
+//     tempId: tempId,
+//     newId: htmlElement.id
+//     })
+//     htmlElement.onclick = null;
+//   });
+// }
+
+// function getInitiaStructureType(className) {
+//   const rootClassNames =
+//   [
+//     'jsavarray',
+//     'jsavtree',
+//     'jsavgraph',
+//     'jsavlist',
+//     'jsavmatrix'
+//   ];
+//   const foundClassNames = rootClassNames.filter(rootClassName =>
+//     className.includes(rootClassName)
+//   );
+//   if(foundClassNames.length !== 1) {
+//     console.warn(
+//       `Data structure should have exactly one of the following class names: \n
+//       ${rootClassNames}\n
+//       Instead found:\n ${foundClassNames}`
+//     );
+//     return;
+//   }
+//   // TODO: check subclasses of trees
+//   return foundClassNames[0].replace('jsav','');
+// }
+
+// function isBinaryHeap(initialStructure) {
+//   return Object.keys(initialStructure).includes('_tree' && '_treenodes');
+// }
+//
+// function getBinaryTreeFromDOM(initialStructure) {
+//   const rootNode = {
+//     id: initialStructure._tree.rootnode.element[0].id,
+//     htmlInnerText: initialStructure._tree.rootnode.element[0].innerText,
+//     childNodes: getChildNodesFromDOM(initialStructure._tree.rootnode)
+//   }
+//   const binaryHeap = {
+//     rootNode,
+//     id: initialStructure._tree.element[0].id,
+//     htmlInnerText: initialStructure._tree.element[0].innerText
+//   }
+//
+//   function getChildNodesFromDOM(node) {
+//     if(!node.childnodes || node.childnodes.length == 0) {
+//       return {
+//         id: node.element[0].id,
+//         edgeToParent: getEdge(node._edgetoparent),
+//         htmlInnerText: node.element[0].innerText
+//       }
+//     }
+//     return node.childnodes.map(node => {
+//       return {
+//         id: node.element[0].id,
+//         htmlInnerText: node.element[0].innerText,
+//         edgeToParent: getEdge(node._edgetoparent),
+//         childNodes: getChildNodesFromDOM(node)
+//       }
+//     });
+//   }
+//
+//   function getEdge(edge) {
+//     return {
+//       startNode: getNodeFromDOM(edge.startnode),
+//       endNode: getNodeFromDOM(edge.endnode)
+//     }
+//   }
+//
+//   function getNodeFromDOM(node) {
+//     return {
+//       id: node.element[0].id,
+//       htmlInnerText: node.element[0].innerText
+//     }
+//   }
+//
+//   return binaryHeap;
+// }
 
 function getDataStructureOptions(options) {
   const filteredOptions = {};
@@ -487,46 +734,12 @@ function getDataStructureOptions(options) {
   return filteredOptions;
 }
 
-function setClickListenerWithId(htmlElement, tempId, passEvent) {
-  htmlElement.onclick = ((clickData) => {
-    passEvent({
-    type: 'recorder-set-id',
-    tempId: tempId,
-    newId: htmlElement.id
-    })
-    htmlElement.onclick = null;
-  });
-}
-
-
-function getInitiaStructureType(className) {
-  const rootClassNames =
-  [
-    'jsavarray',
-    'jsavtree',
-    'jsavgraph',
-    'jsavlist',
-    'jsavmatrix'
-  ];
-  const foundClassNames = rootClassNames.filter(rootClassName =>
-    className.includes(rootClassName)
-  );
-  if(foundClassNames.length !== 1) {
-    console.warn(
-      `Data structure should have exactly one of the following class names: \n
-      ${rootClassNames}\n
-      Instead found:\n ${foundClassNames}`
-    );
-    return;
-  }
-  // TODO: check subclasses of trees
-  return foundClassNames[0].replace('jsav','');
-}
-
 function setNewId(eventData) {
   const initialState = submission.state().initialState;
   const dsIndex = initialState.dataStructures.findIndex(ds => ds.id === eventData.tempId);
-  submission.addInitialStateSuccesfully.setDsId(dsIndex, eventData.newId);
+  if(dsIndex >= 0) {
+    submission.addInitialStateSuccesfully.setDsId(dsIndex, eventData.newId);
+  }
 }
 
 function setAnimationHTML(exercise) {
@@ -540,7 +753,7 @@ module.exports = {
   setAnimationHTML
 }
 
-},{"../exerciseRecorder":6,"../submission/submission":37,"../utils/helperFunctions":39}],8:[function(require,module,exports){
+},{"../dataStructures/dataStructures":5,"../exerciseRecorder":9,"../submission/submission":40,"../utils/helperFunctions":42}],11:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function setExerciseMetadata(metadata) {
@@ -552,9 +765,9 @@ module.exports = {
   setExerciseMetadata
 }
 
-},{"../submission/submission":37}],9:[function(require,module,exports){
+},{"../submission/submission":40}],12:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":11}],10:[function(require,module,exports){
+},{"./lib/axios":14}],13:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -736,7 +949,7 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-},{"../core/buildFullPath":17,"../core/createError":18,"./../core/settle":22,"./../helpers/buildURL":26,"./../helpers/cookies":28,"./../helpers/isURLSameOrigin":30,"./../helpers/parseHeaders":32,"./../utils":34}],11:[function(require,module,exports){
+},{"../core/buildFullPath":20,"../core/createError":21,"./../core/settle":25,"./../helpers/buildURL":29,"./../helpers/cookies":31,"./../helpers/isURLSameOrigin":33,"./../helpers/parseHeaders":35,"./../utils":37}],14:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -791,7 +1004,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":12,"./cancel/CancelToken":13,"./cancel/isCancel":14,"./core/Axios":15,"./core/mergeConfig":21,"./defaults":24,"./helpers/bind":25,"./helpers/spread":33,"./utils":34}],12:[function(require,module,exports){
+},{"./cancel/Cancel":15,"./cancel/CancelToken":16,"./cancel/isCancel":17,"./core/Axios":18,"./core/mergeConfig":24,"./defaults":27,"./helpers/bind":28,"./helpers/spread":36,"./utils":37}],15:[function(require,module,exports){
 'use strict';
 
 /**
@@ -812,7 +1025,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],13:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -871,14 +1084,14 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":12}],14:[function(require,module,exports){
+},{"./Cancel":15}],17:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],15:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -974,7 +1187,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"../helpers/buildURL":26,"./../utils":34,"./InterceptorManager":16,"./dispatchRequest":19,"./mergeConfig":21}],16:[function(require,module,exports){
+},{"../helpers/buildURL":29,"./../utils":37,"./InterceptorManager":19,"./dispatchRequest":22,"./mergeConfig":24}],19:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1028,7 +1241,7 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":34}],17:[function(require,module,exports){
+},{"./../utils":37}],20:[function(require,module,exports){
 'use strict';
 
 var isAbsoluteURL = require('../helpers/isAbsoluteURL');
@@ -1050,7 +1263,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
   return requestedURL;
 };
 
-},{"../helpers/combineURLs":27,"../helpers/isAbsoluteURL":29}],18:[function(require,module,exports){
+},{"../helpers/combineURLs":30,"../helpers/isAbsoluteURL":32}],21:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -1070,7 +1283,7 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":20}],19:[function(require,module,exports){
+},{"./enhanceError":23}],22:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1151,7 +1364,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":14,"../defaults":24,"./../utils":34,"./transformData":23}],20:[function(require,module,exports){
+},{"../cancel/isCancel":17,"../defaults":27,"./../utils":37,"./transformData":26}],23:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1195,7 +1408,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   return error;
 };
 
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1270,7 +1483,7 @@ module.exports = function mergeConfig(config1, config2) {
   return config;
 };
 
-},{"../utils":34}],22:[function(require,module,exports){
+},{"../utils":37}],25:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1297,7 +1510,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":18}],23:[function(require,module,exports){
+},{"./createError":21}],26:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1319,7 +1532,7 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":34}],24:[function(require,module,exports){
+},{"./../utils":37}],27:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1420,7 +1633,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = defaults;
 
 }).call(this,require('_process'))
-},{"./adapters/http":10,"./adapters/xhr":10,"./helpers/normalizeHeaderName":31,"./utils":34,"_process":40}],25:[function(require,module,exports){
+},{"./adapters/http":13,"./adapters/xhr":13,"./helpers/normalizeHeaderName":34,"./utils":37,"_process":43}],28:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1433,7 +1646,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],26:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1506,7 +1719,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":34}],27:[function(require,module,exports){
+},{"./../utils":37}],30:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1522,7 +1735,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],28:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1577,7 +1790,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":34}],29:[function(require,module,exports){
+},{"./../utils":37}],32:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1593,7 +1806,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],30:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1663,7 +1876,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":34}],31:[function(require,module,exports){
+},{"./../utils":37}],34:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1677,7 +1890,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":34}],32:[function(require,module,exports){
+},{"../utils":37}],35:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1732,7 +1945,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":34}],33:[function(require,module,exports){
+},{"./../utils":37}],36:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1761,7 +1974,7 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
@@ -2107,7 +2320,7 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":25}],35:[function(require,module,exports){
+},{"./helpers/bind":28}],38:[function(require,module,exports){
 const axios = require('axios');
 
 async function sendSubmission(data, url) {
@@ -2131,7 +2344,7 @@ module.exports = {
   sendSubmission
 }
 
-},{"axios":9}],36:[function(require,module,exports){
+},{"axios":12}],39:[function(require,module,exports){
 // TODO: add check to avoid endless loop
 function copyObject(obj) {
   const copy = {};
@@ -2215,7 +2428,7 @@ module.exports = {
   isNumber
 }
 
-},{}],37:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 const helpers = require('./helpers');
 const valid = require('./validate');
 
@@ -2448,7 +2661,7 @@ module.exports = {
   checkAndFixLastAnimationStep
 }
 
-},{"./helpers":36,"./validate":38}],38:[function(require,module,exports){
+},{"./helpers":39,"./validate":41}],41:[function(require,module,exports){
 //TODO: set all try catch statements
 
 const helpers = require('./helpers.js');
@@ -2605,7 +2818,7 @@ module.exports = {
   dsId: validateDsId,
 }
 
-},{"./helpers.js":36}],39:[function(require,module,exports){
+},{"./helpers.js":39}],42:[function(require,module,exports){
 // Takes a string containing an html element
 function extractTextByClassName(html, className){
   let text;
@@ -2684,7 +2897,7 @@ const helpers = {
 
 module.exports = helpers;
 
-},{}],40:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2870,4 +3083,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[6]);
+},{}]},{},[9]);

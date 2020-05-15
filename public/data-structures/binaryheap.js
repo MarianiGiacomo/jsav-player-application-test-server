@@ -66,12 +66,12 @@
         }
       });
       this.element.attr("data-jsav-heap-size", size.length);
-      
+
       this.initializeFromElement();
     }
     var oldfx = $.fx.off || false;
     $.fx.off = true;
-    
+
     if (options.stats) {
       this.stats = {"swaps": 0, "leftswaps": 0, "rightswaps": 0,
                     "recursiveswaps": 0, "partlyrecursiveswaps": 0};
@@ -97,7 +97,7 @@
   bhproto.arrayswap = bhproto.swap;
   bhproto.arrayclear = bhproto.clear;
   bhproto.arrayvalue = bhproto.value;
-  
+
   bhproto.value = function (index, newValue) {
     if (typeof newValue === "undefined") {
       return this.arrayvalue(index);
@@ -111,7 +111,7 @@
     }
     return this;
   };
-  
+
   bhproto.clear = function () {
     this.arrayclear();
     if (this.options.tree) {
@@ -259,7 +259,57 @@
     }
     return this;
   };
-  
+
+  /*
+  * Event Handling
+  */
+
+  // events to register as functions on array
+  var events = ["click", "dblclick", "mousedown", "mousemove", "mouseup",
+                "mouseenter", "mouseleave"];
+  // returns a function for the passed eventType that binds a passed
+  // function to that eventType for indices in the array
+  var eventhandler = function(eventType) {
+    return function(data, handler) {
+      // store reference to this, needed when executing the handler
+      var self = this;
+      // bind a jQuery event handler, limit to .jsavindex
+      this.element.on(eventType, null , function(e) {
+        // get the index of the clicked element
+        var index = self.element.find('.jsavvaluelabel').index(event.target)
+        // log the event
+        self.jsav.logEvent({type: "jsav-array-" + eventType, binaryHeapId: self.id(), index: index});
+        if ($.isFunction(data)) { // if no custom data..
+          // ..bind this to the array and call handler
+          // with params array index and the event
+          data.call(self, index, e);
+        } else if ($.isFunction(handler)) { // if custom data is passed
+          // ..bind this to the array and call handler
+          var params = $.isArray(data)?data.slice(0):[data]; // get a cloned array or data as array
+          params.unshift(index); // add index to first parameter
+          params.push(e); // jQuery event as the last
+          handler.apply(self, params); // apply the function
+        }
+      });
+      return this;
+    };
+  };
+  // create the event binding functions and add to array prototype
+  for (var i = events.length; i--; ) {
+    bhproto[events[i]] = eventhandler(events[i]);
+  }
+  bhproto.on = function(eventName, data, handler) {
+    console.log('DATA', data);
+    console.log('handler', handler);
+    console.log('THIS', this);
+    eventhandler(eventName).call(this, data, handler);
+    return this;
+  };
+
+  /*************************************
+  **************************************
+  **************************************/
+
   JSAV.ext.ds.binheap = function (element, options) {
     return new BinaryHeap(this, element, $.extend(true, {'compare': compareFunction, "stats": false,
                                                          'steps': true, 'tree': true,

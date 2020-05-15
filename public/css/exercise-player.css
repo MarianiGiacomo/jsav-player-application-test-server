@@ -6,17 +6,26 @@
 }
 
 .jsavvaluelabel {
-  font-size: xx-small;
+  font-size: xx-small !important;
+}
+
+.jsavautoresize .jsavnode {
+  min-width: 30px !important;
 }
 
 .jsavline {
   height: 38px;
 }
+
 .jsavcanvas {
   min-height: 250px;
   min-width: 200px !important;
   margin: 5px;
 }
+.jsavcanvas svg {
+  z-index: 1;
+}
+
 .views-container {
   display: flex;
   justify-content: center;

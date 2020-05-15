@@ -1,3 +1,17 @@
 .jsavvaluelabel {
   font-size: xx-small;
 }
+
+.jsavautoresize .jsavnode {
+  min-width: 30px;
+}
+
+.jsavline {
+  height: 38px;
+}
+
+.jsavcanvas {
+  min-height: 250px;
+  min-width: 200px !important;
+  margin: 5px;
+}
