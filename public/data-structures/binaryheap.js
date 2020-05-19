@@ -299,9 +299,6 @@
     bhproto[events[i]] = eventhandler(events[i]);
   }
   bhproto.on = function(eventName, data, handler) {
-    console.log('DATA', data);
-    console.log('handler', handler);
-    console.log('THIS', this);
     eventhandler(eventName).call(this, data, handler);
     return this;
   };

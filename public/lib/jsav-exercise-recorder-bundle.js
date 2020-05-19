@@ -1,6 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const submission = require('../submission/submission');
 const arrayAnimation = require('./array/array-animation');
+const nodeAnimation = require('./node/node-animation');
 const modelAnswerAnimation = require('./model-answer/model-answer-animation');
 const helpers = require('../utils/helperFunctions');
 const dataStructures = require('../dataStructures/dataStructures');
@@ -76,17 +77,18 @@ function handleGradeButtonClick(eventData) {
 
 module.exports = {
   handleArrayEvents: arrayAnimation.handleArrayEvents,
+  handleNodeEvents: nodeAnimation.handleNodeEvents,
   handleGradableStep,
   handleGradeButtonClick,
   handleModelAnswer: modelAnswerAnimation.handleModelAnswer
 }
 
-},{"../dataStructures/dataStructures":5,"../submission/submission":40,"../utils/helperFunctions":42,"./array/array-animation":2,"./model-answer/model-answer-animation":3}],2:[function(require,module,exports){
+},{"../dataStructures/dataStructures":6,"../submission/submission":41,"../utils/helperFunctions":43,"./array/array-animation":2,"./model-answer/model-answer-animation":3,"./node/node-animation":4}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 
 function handleArrayEvents(exercise, eventData, exerciseHTML) {
-  const id = eventData.arrayid;
+  const id = eventData.arrayid || eventData.binaryHeapId;
   switch(eventData.type) {
     case 'jsav-array-click':
       const clickData = {
@@ -121,7 +123,7 @@ module.exports = {
   handleArrayEvents
 }
 
-},{"../../submission/submission":40,"../../utils/helperFunctions":42}],3:[function(require,module,exports){
+},{"../../submission/submission":41,"../../utils/helperFunctions":43}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const modelAnswerDefinitions = require("../../definitions/model-answer/model-answer-definitions.js");
 
@@ -156,7 +158,19 @@ module.exports = {
   handleModelAnswer,
 }
 
-},{"../../definitions/model-answer/model-answer-definitions.js":8,"../../submission/submission":40}],4:[function(require,module,exports){
+},{"../../definitions/model-answer/model-answer-definitions.js":9,"../../submission/submission":41}],4:[function(require,module,exports){
+
+function handleNodeEvents(exercise, eventData) {
+  const id = eventData.objid;
+
+}
+
+
+module.exports = {
+  handleNodeEvents
+}
+
+},{}],5:[function(require,module,exports){
 const tree = require('../tree/tree');
 
 function isBinaryHeap(initialStructure) {
@@ -181,7 +195,7 @@ module.exports = {
   getBinHeap: getBinaryTreeFromDOM
 }
 
-},{"../tree/tree":6}],5:[function(require,module,exports){
+},{"../tree/tree":7}],6:[function(require,module,exports){
 const binaryHeap = require('./binaryHeap/binaryHeap');
 
 function getDataStructuresFromExercise(exercise, passEvent) {
@@ -255,7 +269,7 @@ module.exports = {
   getDataStructuresFromExercise
 }
 
-},{"./binaryHeap/binaryHeap":4}],6:[function(require,module,exports){
+},{"./binaryHeap/binaryHeap":5}],7:[function(require,module,exports){
 
 function getChildNodesFromDOM(node) {
   if(!node.childnodes || node.childnodes.length == 0) {
@@ -295,7 +309,7 @@ module.exports = {
   node: getNodeFromDOM
 }
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 const helpers = require('../utils/helperFunctions');
 const submission = require('../submission/submission');
 const modelAnswer = require('./model-answer/model-answer-definitions.js');
@@ -357,7 +371,7 @@ module.exports = {
   }
 }
 
-},{"../submission/submission":40,"../utils/helperFunctions":42,"./model-answer/model-answer-definitions.js":8}],8:[function(require,module,exports){
+},{"../submission/submission":41,"../utils/helperFunctions":43,"./model-answer/model-answer-definitions.js":9}],9:[function(require,module,exports){
 const submission = require('../../submission/submission');
 
 // Adds the model answer function as string
@@ -435,7 +449,7 @@ module.exports = {
   modelAnswerProgress,
 }
 
-},{"../../submission/submission":40}],9:[function(require,module,exports){
+},{"../../submission/submission":41}],10:[function(require,module,exports){
 const submission = require('./submission/submission');
 const metad_func = require('./metadata/metadata');
 const def_func = require('./definitions/definitions');
@@ -460,6 +474,20 @@ Object.seal(modelAnswer);
 
 initialize();
 
+function initialize() {
+  setSubmissionAndPostUrl();
+  submission.reset();
+  metad_func.setExerciseMetadata(getMetadataFromURLparams())
+  try {
+    $(document).off("jsav-log-event");
+    $(document).on("jsav-log-event",  function (event, eventData) {
+      setTimeout( () => passEvent(eventData), 50);
+    });
+  } catch (error) {
+    console.warn(error)
+  }
+}
+
 // According to https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
 function setSubmissionAndPostUrl() {
   // LMS defines: used if grading asynchronously
@@ -479,20 +507,6 @@ function getMetadataFromURLparams() {
   return { max_points, uid, ordinal_number };
 }
 
-function initialize() {
-  setSubmissionAndPostUrl();
-  submission.reset();
-  metad_func.setExerciseMetadata(getMetadataFromURLparams())
-  try {
-    $(document).off("jsav-log-event");
-    $(document).on("jsav-log-event",  function (event, eventData) {
-      setTimeout( () => passEvent(eventData), 50);
-    });
-  } catch (error) {
-    console.warn(error)
-  }
-}
-
 function passEvent(eventData) {
   console.log('EVENT DATA', eventData);
   switch(eventData.type){
@@ -508,17 +522,18 @@ function passEvent(eventData) {
       init_state_func.setInitialDataStructures(exercise, passEvent);
       init_state_func.setAnimationHTML(exercise);
       break;
-      // Here we handle all array related events
     case String(eventData.type.match(/^jsav-array-.*/)):
       anim_func.handleArrayEvents(exercise, eventData);
+      break;
+    case String(eventData.type.match(/^jsav-node-.*/)):
+      anim_func.handleNodeEvents(exercise, eventData);
       break;
     // This is fired by the initialState.js because JSAV sets array ID only on first click
     case 'recorder-set-id':
       init_state_func.setNewId(eventData);
       break;
     case 'jsav-exercise-undo':
-      exerciseHTML = helpers.getExerciseHTML(exercise)
-      setTimeout(() => anim_func.handleGradableStep(exercise, eventData, exerciseHTML), 100);
+      setTimeout(() => anim_func.handleGradableStep(exercise, eventData), 100);
       break;
     case 'jsav-exercise-gradeable-step':
       anim_func.handleGradableStep(exercise, eventData, passEvent);
@@ -528,7 +543,7 @@ function passEvent(eventData) {
       modelAnswer.ready = true;
     case 'jsav-exercise-model-init':
       if(!modelAnswer.opened) {
-        exercise.modelav.SPEED = modelAnswer.recordingSpeed -10;
+        exercise.modelav.SPEED = modelAnswer.recordingSpeed +10;
         modelAnswer.ready = !def_func.modelAnswer.recordStep(exercise);
         $('.jsavmodelanswer .jsavforward').click();
         break;
@@ -578,7 +593,7 @@ function finish(eventData) {
   }
 }
 
-},{"./animation/animation":1,"./definitions/definitions":7,"./initialState/initialState":10,"./metadata/metadata":11,"./rest-service/services":38,"./submission/submission":40,"./utils/helperFunctions":42}],10:[function(require,module,exports){
+},{"./animation/animation":1,"./definitions/definitions":8,"./initialState/initialState":11,"./metadata/metadata":12,"./rest-service/services":39,"./submission/submission":41,"./utils/helperFunctions":43}],11:[function(require,module,exports){
 const recorder = require('../exerciseRecorder');
 const submission = require('../submission/submission');
 const helpers = require('../utils/helperFunctions');
@@ -753,7 +768,7 @@ module.exports = {
   setAnimationHTML
 }
 
-},{"../dataStructures/dataStructures":5,"../exerciseRecorder":9,"../submission/submission":40,"../utils/helperFunctions":42}],11:[function(require,module,exports){
+},{"../dataStructures/dataStructures":6,"../exerciseRecorder":10,"../submission/submission":41,"../utils/helperFunctions":43}],12:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function setExerciseMetadata(metadata) {
@@ -765,9 +780,9 @@ module.exports = {
   setExerciseMetadata
 }
 
-},{"../submission/submission":40}],12:[function(require,module,exports){
+},{"../submission/submission":41}],13:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":14}],13:[function(require,module,exports){
+},{"./lib/axios":15}],14:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -949,7 +964,7 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-},{"../core/buildFullPath":20,"../core/createError":21,"./../core/settle":25,"./../helpers/buildURL":29,"./../helpers/cookies":31,"./../helpers/isURLSameOrigin":33,"./../helpers/parseHeaders":35,"./../utils":37}],14:[function(require,module,exports){
+},{"../core/buildFullPath":21,"../core/createError":22,"./../core/settle":26,"./../helpers/buildURL":30,"./../helpers/cookies":32,"./../helpers/isURLSameOrigin":34,"./../helpers/parseHeaders":36,"./../utils":38}],15:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -1004,7 +1019,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":15,"./cancel/CancelToken":16,"./cancel/isCancel":17,"./core/Axios":18,"./core/mergeConfig":24,"./defaults":27,"./helpers/bind":28,"./helpers/spread":36,"./utils":37}],15:[function(require,module,exports){
+},{"./cancel/Cancel":16,"./cancel/CancelToken":17,"./cancel/isCancel":18,"./core/Axios":19,"./core/mergeConfig":25,"./defaults":28,"./helpers/bind":29,"./helpers/spread":37,"./utils":38}],16:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1025,7 +1040,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -1084,14 +1099,14 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":15}],17:[function(require,module,exports){
+},{"./Cancel":16}],18:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1187,7 +1202,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"../helpers/buildURL":29,"./../utils":37,"./InterceptorManager":19,"./dispatchRequest":22,"./mergeConfig":24}],19:[function(require,module,exports){
+},{"../helpers/buildURL":30,"./../utils":38,"./InterceptorManager":20,"./dispatchRequest":23,"./mergeConfig":25}],20:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1241,7 +1256,7 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":37}],20:[function(require,module,exports){
+},{"./../utils":38}],21:[function(require,module,exports){
 'use strict';
 
 var isAbsoluteURL = require('../helpers/isAbsoluteURL');
@@ -1263,7 +1278,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
   return requestedURL;
 };
 
-},{"../helpers/combineURLs":30,"../helpers/isAbsoluteURL":32}],21:[function(require,module,exports){
+},{"../helpers/combineURLs":31,"../helpers/isAbsoluteURL":33}],22:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -1283,7 +1298,7 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":23}],22:[function(require,module,exports){
+},{"./enhanceError":24}],23:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1364,7 +1379,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":17,"../defaults":27,"./../utils":37,"./transformData":26}],23:[function(require,module,exports){
+},{"../cancel/isCancel":18,"../defaults":28,"./../utils":38,"./transformData":27}],24:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1408,7 +1423,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   return error;
 };
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1483,7 +1498,7 @@ module.exports = function mergeConfig(config1, config2) {
   return config;
 };
 
-},{"../utils":37}],25:[function(require,module,exports){
+},{"../utils":38}],26:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1510,7 +1525,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":21}],26:[function(require,module,exports){
+},{"./createError":22}],27:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1532,7 +1547,7 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":37}],27:[function(require,module,exports){
+},{"./../utils":38}],28:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1633,7 +1648,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = defaults;
 
 }).call(this,require('_process'))
-},{"./adapters/http":13,"./adapters/xhr":13,"./helpers/normalizeHeaderName":34,"./utils":37,"_process":43}],28:[function(require,module,exports){
+},{"./adapters/http":14,"./adapters/xhr":14,"./helpers/normalizeHeaderName":35,"./utils":38,"_process":44}],29:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1646,7 +1661,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1719,7 +1734,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":37}],30:[function(require,module,exports){
+},{"./../utils":38}],31:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1735,7 +1750,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1790,7 +1805,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":37}],32:[function(require,module,exports){
+},{"./../utils":38}],33:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1806,7 +1821,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1876,7 +1891,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":37}],34:[function(require,module,exports){
+},{"./../utils":38}],35:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1890,7 +1905,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":37}],35:[function(require,module,exports){
+},{"../utils":38}],36:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1945,7 +1960,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":37}],36:[function(require,module,exports){
+},{"./../utils":38}],37:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1974,7 +1989,7 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
@@ -2320,7 +2335,7 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":28}],38:[function(require,module,exports){
+},{"./helpers/bind":29}],39:[function(require,module,exports){
 const axios = require('axios');
 
 async function sendSubmission(data, url) {
@@ -2344,7 +2359,7 @@ module.exports = {
   sendSubmission
 }
 
-},{"axios":12}],39:[function(require,module,exports){
+},{"axios":13}],40:[function(require,module,exports){
 // TODO: add check to avoid endless loop
 function copyObject(obj) {
   const copy = {};
@@ -2428,7 +2443,7 @@ module.exports = {
   isNumber
 }
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 const helpers = require('./helpers');
 const valid = require('./validate');
 
@@ -2661,7 +2676,7 @@ module.exports = {
   checkAndFixLastAnimationStep
 }
 
-},{"./helpers":39,"./validate":41}],41:[function(require,module,exports){
+},{"./helpers":40,"./validate":42}],42:[function(require,module,exports){
 //TODO: set all try catch statements
 
 const helpers = require('./helpers.js');
@@ -2818,7 +2833,7 @@ module.exports = {
   dsId: validateDsId,
 }
 
-},{"./helpers.js":39}],42:[function(require,module,exports){
+},{"./helpers.js":40}],43:[function(require,module,exports){
 // Takes a string containing an html element
 function extractTextByClassName(html, className){
   let text;
@@ -2897,7 +2912,7 @@ const helpers = {
 
 module.exports = helpers;
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -3083,4 +3098,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[9]);
+},{}]},{},[10]);

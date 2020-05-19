@@ -219,10 +219,68 @@ class DOMSlideShow {
 module.exports = { DOMSlideShow }
 
 },{}],5:[function(require,module,exports){
+
+function readKeys(input) {
+  try {
+    const json = typeof(input) === 'string' ? JSON.parse(input) : input
+  } catch (err) {
+    throw err;
+  }
+  return (show) => jsonToHTML(input, show);
+}
+
+function jsonToHTML(input, show) {
+  const display = show ? 'block' : 'none';
+  const htmlArray = [`<ul style="display:${display}">`];
+  for( let [key, value] of Object.entries(input)) {
+    if(typeof(value) === 'object' && Object.keys(value).length > 0) {
+      htmlArray.push(`<li>${key}:<span class="clickable" style="cursor: pointer">+</span>`)
+      htmlArray.push(jsonToHTML(value, false));
+    } else {
+      let content;
+      if(Array.isArray(value)) {
+        content = '[]'
+      } else if(typeof(value) === 'object') {
+        content = '{}'
+      } else {
+        content = `<span class="clickable" style="cursor: pointer">+</span><code style="display:none"><pre>${value}</pre></code>`;
+      }
+      htmlArray.push(`<li>${key}: ${content}</li>`)
+    }
+  }
+  htmlArray.push('</ul>')
+  return htmlArray.flat().join('');
+}
+
+function setClickListeners() {
+  const clickableElements = document.getElementsByClassName('clickable');
+  Array.from(clickableElements).forEach( el => {
+    el.onclick = () => {
+      const node = el.nextSibling;
+      if(node.style && node.style.display == 'none') {
+        node.style.display = 'block';
+        el.innerText = ' -'
+      } else if(node.style && node.style.display == 'block') {
+        node.style.display = 'none';
+        el.innerText = '+'
+      }
+    };
+  })
+}
+
+if(typeof(module) !== undefined) {
+  module.exports = {
+    readKeys,
+    setClickListeners
+  }
+}
+
+},{}],6:[function(require,module,exports){
 const { DOMAnimation } = require('./animation/animation.js');
 const { DOMSlideShow } = require('./animation/slideShow.js');
 const animationView = require('./animation/animation-view.js');
 const modelAnswerView = require('./animation/model-answer-view.js');
+const jsonViewer = require('./json-viewer/index');
 
 // let $ = window.$;
 
@@ -369,7 +427,7 @@ function setClickHandlers(submission) {
 }
 
 function showJaal(submission) {
-  const modalContent = JSON.stringify(submission, null, 2);
+  const modalContent = jsonViewer.readKeys(submission)(true);
   useModal(modalContent);
 }
 
@@ -380,9 +438,10 @@ function exportAnimation() {
 }
 
 function useModal(modalContent) {
-  $("#modal-content").text(modalContent);
+  $("#modal-content").html(modalContent);
   const modal = $('#myModal');
   modal.css('display', 'block');
+  jsonViewer.setClickListeners();
   const close = $('.close');
   close.on('click', () => modal.css('display', 'none'));
 }
@@ -391,4 +450,4 @@ module.exports = {
   initialize
 }
 
-},{"./animation/animation-view.js":1,"./animation/animation.js":2,"./animation/model-answer-view.js":3,"./animation/slideShow.js":4}]},{},[5]);
+},{"./animation/animation-view.js":1,"./animation/animation.js":2,"./animation/model-answer-view.js":3,"./animation/slideShow.js":4,"./json-viewer/index":5}]},{},[6]);
