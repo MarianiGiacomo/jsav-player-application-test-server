@@ -398,7 +398,4 @@
   $(".jsavcontainer").on("click", ".jsavnode", function () {
     window.alert("Please, click on the edges, not the nodes.");
   });
-
-  $("#about").click(about);
-
 }(jQuery));
