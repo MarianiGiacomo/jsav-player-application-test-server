@@ -25,6 +25,14 @@
 .jsavcanvas svg {
   z-index: 1;
 }
+.jsavcanvas > svg {
+  display: none;
+}
+
+.selected {
+  background-color: yellow !important;
+}
+
 
 .views-container {
   display: flex;
@@ -54,7 +62,6 @@
   border: solid 1px black;
   margin: 2px;
   padding: 2px;
-  text-align: center;
 }
 
 .jsavtree, .jsavcommontree, .jsavautoresize, .jsavbinarytree {

@@ -219,37 +219,44 @@ class DOMSlideShow {
 module.exports = { DOMSlideShow }
 
 },{}],5:[function(require,module,exports){
+function jsonToHTML(input) {
+  return (show) => {
+    return (htmlToString) => {
+      const json = parseInput(input);
+      const display = show ? 'block' : 'none';
+      const repSm = /</gi;
+      const repGt = />/gi;
+      const htmlArray = [`<ul style="display:${display}">`];
+      for( let [key, value] of Object.entries(json)) {
+        if(typeof(value) === 'object' && Object.keys(value).length > 0) {
+          htmlArray.push(`<li>${key}:<span class="clickable" style="cursor: pointer">+</span>`)
+          htmlArray.push(jsonToHTML(value)(false)(htmlToString));
+        } else {
+          let content;
+          if(Array.isArray(value)) {
+            content = '[]'
+          } else if(typeof(value) === 'object') {
+            content = '{}'
+          } else {
+            const formattedContent = (typeof(value) === 'string' && htmlToString) ? value.replace(repSm, '&lt;').replace(repGt, '&gt;') : value;
+            content = `<span class="clickable" style="cursor: pointer">+</span><code style="display:none"><pre>${formattedContent}</pre></code>`;
+          }
+          htmlArray.push(`<li>${key}: ${content}</li>`)
+        }
+      }
+      htmlArray.push('</ul>')
+      return htmlArray.flat().join('');
+    }
+  }
+}
 
-function readKeys(input) {
+function parseInput(input) {
   try {
-    const json = typeof(input) === 'string' ? JSON.parse(input) : input
+    var json = typeof(input) === 'string' ? JSON.parse(input) : input
   } catch (err) {
     throw err;
   }
-  return (show) => jsonToHTML(input, show);
-}
-
-function jsonToHTML(input, show) {
-  const display = show ? 'block' : 'none';
-  const htmlArray = [`<ul style="display:${display}">`];
-  for( let [key, value] of Object.entries(input)) {
-    if(typeof(value) === 'object' && Object.keys(value).length > 0) {
-      htmlArray.push(`<li>${key}:<span class="clickable" style="cursor: pointer">+</span>`)
-      htmlArray.push(jsonToHTML(value, false));
-    } else {
-      let content;
-      if(Array.isArray(value)) {
-        content = '[]'
-      } else if(typeof(value) === 'object') {
-        content = '{}'
-      } else {
-        content = `<span class="clickable" style="cursor: pointer">+</span><code style="display:none"><pre>${value}</pre></code>`;
-      }
-      htmlArray.push(`<li>${key}: ${content}</li>`)
-    }
-  }
-  htmlArray.push('</ul>')
-  return htmlArray.flat().join('');
+  return json;
 }
 
 function setClickListeners() {
@@ -270,7 +277,7 @@ function setClickListeners() {
 
 if(typeof(module) !== undefined) {
   module.exports = {
-    readKeys,
+    jsonToHTML,
     setClickListeners
   }
 }
@@ -426,22 +433,21 @@ function setClickHandlers(submission) {
   $('#export').on('click', () => exportAnimation());
 }
 
-function showJaal(submission) {
-  const modalContent = jsonViewer.readKeys(submission)(true);
-  useModal(modalContent);
-}
-
 function exportAnimation() {
   const iframe = `<iframe src=${window.location.href}</iframe>`
   const modalContent = `Add this iframe to an HTML document to import the animation: \n${iframe}`;
   useModal(modalContent);
 }
 
-function useModal(modalContent) {
-  $("#modal-content").html(modalContent);
+function showJaal(submission) {
   const modal = $('#myModal');
   modal.css('display', 'block');
-  jsonViewer.setClickListeners();
+  $('#show-jaal').on('click', () => {
+    const htmlToString = $('#html-to-string').prop('checked');
+    const modalContent = jsonViewer.jsonToHTML(submission)(true)(htmlToString);
+    $("#modal-content").html(modalContent);
+    jsonViewer.setClickListeners();
+  })
   const close = $('.close');
   close.on('click', () => modal.css('display', 'none'));
 }
