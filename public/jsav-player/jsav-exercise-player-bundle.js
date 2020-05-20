@@ -239,7 +239,7 @@ function jsonToHTML(input) {
             content = '{}'
           } else {
             const formattedContent = (typeof(value) === 'string' && htmlToString) ? value.replace(repSm, '&lt;').replace(repGt, '&gt;') : value;
-            content = `<span class="clickable" style="cursor: pointer">+</span><code style="display:none"><pre>${formattedContent}</pre></code>`;
+            content = getFinalContent(formattedContent);
           }
           htmlArray.push(`<li>${key}: ${content}</li>`)
         }
@@ -248,6 +248,13 @@ function jsonToHTML(input) {
       return htmlArray.flat().join('');
     }
   }
+}
+
+function getFinalContent(formattedContent) {
+  if(formattedContent.length < 50 || typeof(formattedContent) == 'number') {
+    return `<span>${formattedContent}</span>`;
+  }
+  return `<span class="clickable" style="cursor: pointer">+</span><pre style="display:none">${formattedContent}</pre>`;
 }
 
 function parseInput(input) {

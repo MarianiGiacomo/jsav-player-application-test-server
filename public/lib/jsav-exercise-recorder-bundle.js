@@ -7,10 +7,10 @@ const helpers = require('../utils/helperFunctions');
 const dataStructures = require('../dataStructures/dataStructures');
 
 
-function handleGradableStep(exercise, eventData, passEvent) {
+function handleGradableStep(exercise, eventData) {
   const exerciseHTML = helpers.getExerciseHTML(exercise)
   // const dataStructuresState = getDataStructuresState(submissionDataStructures(), exercise);
-  const dataStructuresState = dataStructures.getDataStructuresFromExercise(exercise, passEvent)
+  const dataStructuresState = dataStructures.getDataStructuresFromExercise(exercise)
   if(dataStructuresState.length) addStepToSubmission(eventData, dataStructuresState, exerciseHTML);
 }
 
@@ -86,44 +86,37 @@ module.exports = {
 },{"../dataStructures/dataStructures":6,"../submission/submission":41,"../utils/helperFunctions":43,"./array/array-animation":2,"./model-answer/model-answer-animation":3,"./node/node-animation":4}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
+const dataStructures = require('../../dataStructures/dataStructures');
 
 function handleArrayEvents(exercise, eventData, exerciseHTML) {
-  const id = eventData.arrayid || eventData.binaryHeapId;
+  const dataStructuresState = dataStructures.getDataStructuresFromExercise(exercise);
+  const clickDataSource = {
+    tstamp: eventData.tstamp,
+    currentStep: eventData.currentStep,
+    dataStructuresState,
+    animationHTML: helpers.getExerciseHTML(exercise)
+    }
   switch(eventData.type) {
     case 'jsav-array-click':
-      const clickData = {
-        type: 'array-click',
-        tstamp: eventData.tstamp,
-        currentStep: eventData.currentStep,
-        dataStructure: {
-          id,
-          values: getArrayValues(exercise.initialStructures, id)
-        },
-        index: eventData.index,
-        animationHTML: helpers.getExerciseHTML(exercise)
-        }
+    const clickDataTarget = {
+      type: 'array-click',
+      index: eventData.index,
+    };
+    if(eventData.arrayid) clickDataTarget.arrayid = eventData.arrayid;
+    if(eventData.binaryHeapId) clickDataTarget.binaryHeapId = eventData.binaryHeapId;
       try {
-        submission.addAnimationStepSuccesfully.dsClick(clickData);
+        submission.addAnimationStepSuccesfully.dsClick(Object.assign(clickDataTarget, clickDataSource));
       } catch (error) {
         console.warn(`Could not set array click in animation: ${error}`);
       }
   }
 }
 
-function getArrayValues(initialStructures, id) {
-  const moreThanOneArrayInExercise = Array.isArray(initialStructures);
-  if (moreThanOneArrayInExercise) {
-    const array = initialStructures.find( ds => ds.element['0'].id === id)
-    return [ ...array._values ];
-  }
-  return [ ...initialStructures._values ];
-}
-
 module.exports = {
   handleArrayEvents
 }
 
-},{"../../submission/submission":41,"../../utils/helperFunctions":43}],3:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":6,"../../submission/submission":41,"../../utils/helperFunctions":43}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const modelAnswerDefinitions = require("../../definitions/model-answer/model-answer-definitions.js");
 
@@ -159,18 +152,38 @@ module.exports = {
 }
 
 },{"../../definitions/model-answer/model-answer-definitions.js":9,"../../submission/submission":41}],4:[function(require,module,exports){
+const submission = require('../../submission/submission');
+const helpers = require('../../utils/helperFunctions');
+const dataStructures = require('../../dataStructures/dataStructures');
 
 function handleNodeEvents(exercise, eventData) {
-  const id = eventData.objid;
-
+  const dataStructuresState = dataStructures.getDataStructuresFromExercise(exercise);
+  const clickDataSource = {
+    tstamp: eventData.tstamp,
+    currentStep: eventData.currentStep,
+    nodeId:  eventData.objid,
+    dataStructuresState,
+    animationHTML: helpers.getExerciseHTML(exercise)
+    }
+  switch(eventData.type) {
+    case 'jsav-node-click':
+      const clickDataTarget = {
+        type: 'node-click',
+        nodeValue: eventData.objvalue
+        }
+      try {
+        submission.addAnimationStepSuccesfully.dsClick(Object.assign(clickDataTarget, clickDataSource));
+      } catch (error) {
+        console.warn(`Could not set node click in animation: ${error}`);
+      }
+  }
 }
-
 
 module.exports = {
   handleNodeEvents
 }
 
-},{}],5:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":6,"../../submission/submission":41,"../../utils/helperFunctions":43}],5:[function(require,module,exports){
 const tree = require('../tree/tree');
 
 function isBinaryHeap(initialStructure) {
@@ -198,20 +211,19 @@ module.exports = {
 },{"../tree/tree":7}],6:[function(require,module,exports){
 const binaryHeap = require('./binaryHeap/binaryHeap');
 
-function getDataStructuresFromExercise(exercise, passEvent) {
+function getDataStructuresFromExercise(exercise) {
   const initialStructures = exercise.initialStructures;
   const dataStructures = [];
   // If initialDataStructures is an Array, it means there is more than one data structure
   if(Array.isArray(initialStructures)) {
     return initialStructures.map(ds => getSingleDataStructure(ds, missingIdHandlingFunctionss))
   }
-  return [getSingleDataStructure(initialStructures, passEvent)];
+  return [getSingleDataStructure(initialStructures)];
 }
 
-function getSingleDataStructure(initialStructure, passEvent) {
+function getSingleDataStructure(initialStructure) {
   const htmlElement = initialStructure.element['0'];
-  // DS might miss id untill first click
-  let id = !htmlElement.id ? handleMissingId(htmlElement, passEvent) : htmlElement.id;
+  const id = htmlElement.id;
   let type =  getDataStructureType(htmlElement.className);
   if(type === 'array' && binaryHeap.isBinHeap(initialStructure)) {
     return {
@@ -226,19 +238,6 @@ function getSingleDataStructure(initialStructure, passEvent) {
     id,
     values: [ ...initialStructure._values ],
   };
-}
-
-function handleMissingId(htmlElement, passEvent) {
-  tempId = `tempid-${Math.random().toString().substr(2)}`;
-  htmlElement.onclick = ((clickData) => {
-    passEvent({
-    type: 'recorder-set-id',
-    tempId: tempId,
-    newId: htmlElement.id
-    })
-    htmlElement.onclick = null;
-  });
-  return tempId;
 }
 
 function getDataStructureType(className) {
@@ -519,13 +518,17 @@ function passEvent(eventData) {
       exercise = eventData.exercise;
       jsav = exercise.jsav;
       def_func.setDefinitions(exercise);
-      init_state_func.setInitialDataStructures(exercise, passEvent);
+      if(init_state_func.someIdMissing(exercise)) {
+        init_state_func.fixMissingIds(exercise, passEvent);
+      }
+      init_state_func.setInitialDataStructures(exercise);
       init_state_func.setAnimationHTML(exercise);
       break;
     case String(eventData.type.match(/^jsav-array-.*/)):
       anim_func.handleArrayEvents(exercise, eventData);
       break;
     case String(eventData.type.match(/^jsav-node-.*/)):
+
       anim_func.handleNodeEvents(exercise, eventData);
       break;
     // This is fired by the initialState.js because JSAV sets array ID only on first click
@@ -536,7 +539,7 @@ function passEvent(eventData) {
       setTimeout(() => anim_func.handleGradableStep(exercise, eventData), 100);
       break;
     case 'jsav-exercise-gradeable-step':
-      anim_func.handleGradableStep(exercise, eventData, passEvent);
+      anim_func.handleGradableStep(exercise, eventData);
       break;
     case 'jsav-exercise-model-open':
       modelAnswer.opened = true;
@@ -599,142 +602,50 @@ const submission = require('../submission/submission');
 const helpers = require('../utils/helperFunctions');
 const dataStructures = require('../dataStructures/dataStructures');
 
-function setInitialDataStructures(exercise, passEvent) {
+function setInitialDataStructures(exercise) {
   const initialStructures = exercise.initialStructures;
-  dataStructures.getDataStructuresFromExercise(exercise, passEvent).forEach(dataStructure => {
+  dataStructures.getDataStructuresFromExercise(exercise).forEach(dataStructure => {
     submission.addInitialStateSuccesfully.dataStructure(dataStructure);
   });
 }
 
-// function checkMissingIds(initialStructures, passEvent) {
-//   if(Array.isArray(initialStructures)) {
-//     initialStructures.forEach(ds => {
-//       const htmlElement = ds.element['0'];
-//       handleMissingId(htmlElement, passEvent)
-//     })
-//   } else {
-//     const htmlElement = initialStructures.element['0'];
-//     handleMissingId(htmlElement, passEvent)
-//   }
-// }
+function someIdMissing(exercise) {
+  const initialStructures = exercise.initialStructures;
+  // If initialDataStructures is an Array, it means there is more than one data structure
+  if(Array.isArray(initialStructures)) {
+    initialStructures.map(ds => {
+      const htmlElement = ds.element['0'];
+      if(!htmlElement.id) return true;
+    })
+    return false;
+  }
+  return !!initialStructures.element['0'].id;
+}
 
-// function getSingleDataStructure(initialStructure, passEvent) {
-//   const htmlElement = initialStructure.element['0'];
-//   let id;
-//   if (!htmlElement.id) {
-//     // Arrays miss id untill first click
-//     id = handleMissingId(htmlElement, passEvent);
-//   }
-//   let type =  getInitiaStructureType(htmlElement.className);
-//   if(type === 'array' && isBinaryHeap(initialStructure)) {
-//     type = 'binaryHeap';
-//     return {
-//       type: type,
-//       id,
-//       values: [ ...initialStructure._values ],
-//       tree: getBinaryTreeFromDOM(initialStructure),
-//       options: getDataStructureOptions(initialStructure.options)
-//     }
-//   }
-//   return {
-//     type: type,
-//     id,
-//     values: [ ...initialStructure._values ],
-//     options: getDataStructureOptions(initialStructure.options)
-//   };
-// }
+function fixMissingIds(exercise, passEvent) {
+  const initialStructures = exercise.initialStructures;
+  if(Array.isArray(initialStructures)) {
+    initialStructures.map(ds => {
+      const htmlElement = ds.element['0'];
+      if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
+    })
+  }
+  const htmlElement = ds.element['0'];
+  if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
+}
 
-// function handleMissingId(htmlElement, passEvent) {
-//   tempId = `tempid-${Math.random().toString().substr(2)}`;
-//   setClickListenerWithId(htmlElement, tempId, passEvent);
-//   return tempId;
-// }
-
-// function setClickListenerWithId(htmlElement, tempId, passEvent) {
-//   htmlElement.onclick = ((clickData) => {
-//     passEvent({
-//     type: 'recorder-set-id',
-//     tempId: tempId,
-//     newId: htmlElement.id
-//     })
-//     htmlElement.onclick = null;
-//   });
-// }
-
-// function getInitiaStructureType(className) {
-//   const rootClassNames =
-//   [
-//     'jsavarray',
-//     'jsavtree',
-//     'jsavgraph',
-//     'jsavlist',
-//     'jsavmatrix'
-//   ];
-//   const foundClassNames = rootClassNames.filter(rootClassName =>
-//     className.includes(rootClassName)
-//   );
-//   if(foundClassNames.length !== 1) {
-//     console.warn(
-//       `Data structure should have exactly one of the following class names: \n
-//       ${rootClassNames}\n
-//       Instead found:\n ${foundClassNames}`
-//     );
-//     return;
-//   }
-//   // TODO: check subclasses of trees
-//   return foundClassNames[0].replace('jsav','');
-// }
-
-// function isBinaryHeap(initialStructure) {
-//   return Object.keys(initialStructure).includes('_tree' && '_treenodes');
-// }
-//
-// function getBinaryTreeFromDOM(initialStructure) {
-//   const rootNode = {
-//     id: initialStructure._tree.rootnode.element[0].id,
-//     htmlInnerText: initialStructure._tree.rootnode.element[0].innerText,
-//     childNodes: getChildNodesFromDOM(initialStructure._tree.rootnode)
-//   }
-//   const binaryHeap = {
-//     rootNode,
-//     id: initialStructure._tree.element[0].id,
-//     htmlInnerText: initialStructure._tree.element[0].innerText
-//   }
-//
-//   function getChildNodesFromDOM(node) {
-//     if(!node.childnodes || node.childnodes.length == 0) {
-//       return {
-//         id: node.element[0].id,
-//         edgeToParent: getEdge(node._edgetoparent),
-//         htmlInnerText: node.element[0].innerText
-//       }
-//     }
-//     return node.childnodes.map(node => {
-//       return {
-//         id: node.element[0].id,
-//         htmlInnerText: node.element[0].innerText,
-//         edgeToParent: getEdge(node._edgetoparent),
-//         childNodes: getChildNodesFromDOM(node)
-//       }
-//     });
-//   }
-//
-//   function getEdge(edge) {
-//     return {
-//       startNode: getNodeFromDOM(edge.startnode),
-//       endNode: getNodeFromDOM(edge.endnode)
-//     }
-//   }
-//
-//   function getNodeFromDOM(node) {
-//     return {
-//       id: node.element[0].id,
-//       htmlInnerText: node.element[0].innerText
-//     }
-//   }
-//
-//   return binaryHeap;
-// }
+function handleMissingId(htmlElement, passEvent) {
+  tempId = `tempid-${Math.random().toString().substr(2)}`;
+  htmlElement.onclick = ((clickData) => {
+    passEvent({
+    type: 'recorder-set-id',
+    tempId: tempId,
+    newId: htmlElement.id
+    })
+    htmlElement.onclick = null;
+  });
+  return tempId;
+}
 
 function getDataStructureOptions(options) {
   const filteredOptions = {};
@@ -763,9 +674,11 @@ function setAnimationHTML(exercise) {
 }
 
 module.exports = {
+  fixMissingIds,
   setInitialDataStructures,
   setNewId,
-  setAnimationHTML
+  setAnimationHTML,
+  someIdMissing,
 }
 
 },{"../dataStructures/dataStructures":6,"../exerciseRecorder":10,"../submission/submission":41,"../utils/helperFunctions":43}],12:[function(require,module,exports){
@@ -2790,12 +2703,22 @@ function validateAnimationHTML(html) {
 }
 
 function validateDsClick(click) {
-  // TODO: implement validateDsClick
+  try {
+    helpers.objectIsNotEmpthy(click);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating data structure click', err);
+    return false;
+  }
   return true;
 }
 
 function validateGradableStep(data) {
-  // TODO: implement chackStateChange
+  try {
+    helpers.objectIsNotEmpthy(data);
+  } catch (err) {
+    console.warn('Exercise Recorder, validating gradable step', err);
+    return false;
+  }
   return true;
 }
 
