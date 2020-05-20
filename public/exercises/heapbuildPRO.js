@@ -51,10 +51,10 @@ $(document).ready(function () {
       // The pseudocode calls heapify(i) for h-1 ... 0 where
       // h = Math.floor(modelbh.size() / 2), while the JavaScript implementation
       // must be called for h ... 1.
-      // modeljsav.umsg(interpret("av_c1") + (i - 1) + ").");
-      // modeljsav.step();
-      // modeljsav.umsg(interpret("av_c2a") + (i - 1) + interpret("av_c2b"));
-      // modeljsav.step();
+      modeljsav.umsg("Main loop calls Min-Heapify(A, " + (i - 1) + ").");
+      modeljsav.step();
+      modeljsav.umsg("If swap is required, swap element at index " + (i - 1) + " with the smaller child and continue Min-Heapify recursion for the index of the swapped child.");
+      modeljsav.step();
       modelbh.heapify(i);
     }
     return modelbh;

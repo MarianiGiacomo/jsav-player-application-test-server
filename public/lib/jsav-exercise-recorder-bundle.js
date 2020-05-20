@@ -235,8 +235,7 @@ function getSingleDataStructure(initialStructure) {
   }
   return {
     type: type,
-    id,
-    values: [ ...initialStructure._values ],
+    id
   };
 }
 
@@ -402,10 +401,10 @@ function recordModelAnswerStepDataStructuresValues(exercise) {
   const stepDSvalues = [];
   if(Array.isArray(modelStructures)) {
     modelStructures.forEach((item) => {
-      stepDSvalues.push([ ...item._values ]);
+      stepDSvalues.push([ ...item._values || 'undefined' ]);
     });
   } else {
-    stepDSvalues.push([ ...modelStructures._values ]);
+    stepDSvalues.push([ ...modelStructures._values || 'undefined' ]);
   }
   return stepDSvalues;
 }
@@ -630,7 +629,7 @@ function fixMissingIds(exercise, passEvent) {
       if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
     })
   }
-  const htmlElement = ds.element['0'];
+  const htmlElement = initialStructures.element['0'];
   if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
 }
 

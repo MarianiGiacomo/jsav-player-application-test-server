@@ -21,7 +21,7 @@
   min-width: 200px !important;
   margin: 5px;
 }
-.jsavcanvas svg {
+.jsavcanvas svg, .jsavedgelabel {
   z-index: 1;
 }
 .jsavcanvas > svg {
@@ -31,7 +31,6 @@
 .selected {
   background-color: yellow !important;
 }
-
 
 .views-container {
   display: flex;
