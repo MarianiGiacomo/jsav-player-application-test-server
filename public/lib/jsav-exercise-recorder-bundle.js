@@ -85,7 +85,7 @@ module.exports = {
   handleModelAnswer: modelAnswerAnimation.handleModelAnswer
 }
 
-},{"../dataStructures/dataStructures":7,"../submission/submission":43,"../utils/helperFunctions":45,"./array/array-animation":2,"./edge/edge-animation":3,"./model-answer/model-answer-animation":4,"./node/node-animation":5}],2:[function(require,module,exports){
+},{"../dataStructures/dataStructures":7,"../submission/submission":44,"../utils/helperFunctions":46,"./array/array-animation":2,"./edge/edge-animation":3,"./model-answer/model-answer-animation":4,"./node/node-animation":5}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 const dataStructures = require('../../dataStructures/dataStructures');
@@ -118,7 +118,7 @@ module.exports = {
   handleArrayEvents
 }
 
-},{"../../dataStructures/dataStructures":7,"../../submission/submission":43,"../../utils/helperFunctions":45}],3:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":7,"../../submission/submission":44,"../../utils/helperFunctions":46}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 const dataStructures = require('../../dataStructures/dataStructures');
@@ -152,7 +152,7 @@ module.exports = {
   handleEdgeEvents
 }
 
-},{"../../dataStructures/dataStructures":7,"../../submission/submission":43,"../../utils/helperFunctions":45}],4:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":7,"../../submission/submission":44,"../../utils/helperFunctions":46}],4:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const modelAnswerDefinitions = require("../../definitions/model-answer/model-answer-definitions.js");
 
@@ -187,7 +187,7 @@ module.exports = {
   handleModelAnswer,
 }
 
-},{"../../definitions/model-answer/model-answer-definitions.js":11,"../../submission/submission":43}],5:[function(require,module,exports){
+},{"../../definitions/model-answer/model-answer-definitions.js":12,"../../submission/submission":44}],5:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 const dataStructures = require('../../dataStructures/dataStructures');
@@ -219,15 +219,24 @@ module.exports = {
   handleNodeEvents
 }
 
-},{"../../dataStructures/dataStructures":7,"../../submission/submission":43,"../../utils/helperFunctions":45}],6:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":7,"../../submission/submission":44,"../../utils/helperFunctions":46}],6:[function(require,module,exports){
 const tree = require('../tree/tree');
 
 function isBinaryHeap(initialStructure) {
   return Object.keys(initialStructure).includes('_tree' && '_treenodes');
 }
 
-function getBinaryTree(initialStructure) {
-  const jsavRoot = initialStructure._tree.rootnode;
+function getBinaryHeap(binaryHeap) {
+  return {
+    type: 'binaryHeap',
+    id: binaryHeap.element[0].id,
+    values: [ ...binaryHeap._values ],
+    tree: getBinaryTree(binaryHeap),
+  }
+}
+
+function getBinaryTree(binaryHeap) {
+  const jsavRoot = binaryHeap._tree.rootnode;
   const rootNode = {
     id: jsavRoot.element[0].id,
     value: jsavRoot.element[0].dataset.value,
@@ -238,9 +247,9 @@ function getBinaryTree(initialStructure) {
   }
   return {
     rootNode,
-    id: initialStructure._tree.element[0].id,
-    root: initialStructure._tree.element[0].dataset.root,
-    values: initialStructure._tree.element[0].innerText
+    id: binaryHeap._tree.element[0].id,
+    root: binaryHeap._tree.element[0].dataset.root,
+    values: binaryHeap._tree.element[0].innerText
   }
 }
 
@@ -292,35 +301,37 @@ function getNode(node) {
 }
 
 module.exports = {
-  isBinHeap: isBinaryHeap,
-  getBinHeap: getBinaryTree
+  isBinaryHeap,
+  getBinaryHeap
 }
 
-},{"../tree/tree":9}],7:[function(require,module,exports){
+},{"../tree/tree":10}],7:[function(require,module,exports){
 const binaryHeap = require('./binaryHeap/binaryHeap');
 const graph = require('./graph/graph');
+const list = require('./list/list');
 
-function getDataStructuresFromExercise(exercise) {
+
+function getDataStructuresFromExercise(exercise, passEvent) {
   const initialStructures = exercise.initialStructures;
   const dataStructures = [];
   // If initialDataStructures is an Array, it means there is more than one data structure
   if(Array.isArray(initialStructures)) {
-    return initialStructures.map(ds => getSingleDataStructure(ds, missingIdHandlingFunctionss))
+    return initialStructures.map(ds => {
+      if(passEvent) return getSingleDataStructure(ds, passEvent);
+      else return getSingleDataStructure(ds);
+    })
   }
-  return [getSingleDataStructure(initialStructures)];
+  if(passEvent) return [getSingleDataStructure(ds, passEvent)];
+  else return [getSingleDataStructure(ds)];
 }
 
-function getSingleDataStructure(initialStructure) {
-  const htmlElement = initialStructure.element['0'];
-  const id = htmlElement.id;
+function getSingleDataStructure(initialStructure, passEvent) {
+  const htmlElement = initialStructure.element[0];
+  const id = (!htmlElement.id && passEvent)?
+  handleMissingId(htmlElement, passEvent): htmlElement.id;
   let type =  getDataStructureType(htmlElement.className);
-  if(type === 'array' && binaryHeap.isBinHeap(initialStructure)) {
-    return {
-      type: 'binaryHeap',
-      id,
-      values: [ ...initialStructure._values ],
-      tree: binaryHeap.getBinHeap(initialStructure),
-    }
+  if(type === 'array' && binaryHeap.isBinaryHeap(initialStructure)) {
+    return binaryHeap.getBinaryHeap(initialStructure);
   }
   else if (type === 'array') {
     return {
@@ -330,12 +341,10 @@ function getSingleDataStructure(initialStructure) {
     }
   }
   else if (type === 'graph') {
-    return {
-      type,
-      id,
-      nodes: graph.nodes(initialStructure),
-      edges: graph.edges(initialStructure)
-    }
+    return graph.getGraph(initialStructure)
+  }
+  else if (type === 'list') {
+    return list.getList(initialStructure);
   }
   return {
     type: type,
@@ -367,17 +376,39 @@ function getDataStructureType(className) {
   return type.replace('jsav','');
 }
 
+function handleMissingId(htmlElement, passEvent) {
+  const tempId = `tempid-${Math.random().toString().substr(2)}`;
+  htmlElement.onclick = ((clickData) => {
+    passEvent({
+    type: 'recorder-set-id',
+    tempId: tempId,
+    newId: htmlElement.id
+    })
+    htmlElement.onclick = null;
+  });
+  return tempId;
+}
+
 module.exports = {
   getDataStructuresFromExercise
 }
 
-},{"./binaryHeap/binaryHeap":6,"./graph/graph":8}],8:[function(require,module,exports){
-function getAllNodes(initialStructure) {
-  return initialStructure._nodes.map(node => getNode(node));
+},{"./binaryHeap/binaryHeap":6,"./graph/graph":8,"./list/list":9}],8:[function(require,module,exports){
+function getGraph(graph) {
+  return {
+    type: "graph",
+    id: graph.element[0].id,
+    nodes: getAllNodes(graph),
+    edges: getAllEdges(graph)
+  }
 }
 
-function getAllEdges(initialStructure) {
-  return initialStructure._alledges.map(edge => getEdge(edge));
+function getAllNodes(graph) {
+  return graph._nodes.map(node => getNode(node));
+}
+
+function getAllEdges(graph) {
+  return graph._alledges.map(edge => getEdge(edge));
 }
 
 function getEdge(edge) {
@@ -396,11 +427,55 @@ function getNode(node) {
 }
 
 module.exports = {
+  getGraph,
   nodes: getAllNodes,
   edges: getAllEdges
 }
 
 },{}],9:[function(require,module,exports){
+function getList(list) {
+  return {
+    first: getAllNodes(list._first),
+    id: list.element[0].id,
+    innerText: list.element[0].innerText,
+    type: "list"
+  }
+}
+
+function getAllNodes(node) {
+  const id = node.element[0].id;
+  const value = node._value || node.element[0].innerText;
+  const next = node._next;
+  if(!node._next) {
+    return getNode(node);
+  }
+  return {
+    id,
+    value,
+    next: getAllNodes(node._next),
+    edgeToNext: getEdge(node._edgetonext)
+  }
+}
+
+function getNode(node) {
+  return {
+    id: node.element[0].id,
+    value: node._value || node.element[0].innerText,
+  }
+}
+
+function getEdge(edge) {
+  return {
+    startNode: getNode(edge.startnode),
+    endNode: getNode(edge.endnode)
+  }
+}
+
+module.exports = {
+  getList
+}
+
+},{}],10:[function(require,module,exports){
 
 function getChildNodes(node) {
   if(!node.childnodes || node.childnodes.length == 0) {
@@ -443,7 +518,7 @@ module.exports = {
   node: getNode
 }
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 const helpers = require('../utils/helperFunctions');
 const submission = require('../submission/submission');
 const modelAnswer = require('./model-answer/model-answer-definitions.js');
@@ -505,7 +580,7 @@ module.exports = {
   }
 }
 
-},{"../submission/submission":43,"../utils/helperFunctions":45,"./model-answer/model-answer-definitions.js":11}],11:[function(require,module,exports){
+},{"../submission/submission":44,"../utils/helperFunctions":46,"./model-answer/model-answer-definitions.js":12}],12:[function(require,module,exports){
 const submission = require('../../submission/submission');
 
 // Adds the model answer function as string
@@ -583,7 +658,7 @@ module.exports = {
   modelAnswerProgress,
 }
 
-},{"../../submission/submission":43}],12:[function(require,module,exports){
+},{"../../submission/submission":44}],13:[function(require,module,exports){
 const submission = require('./submission/submission');
 const metad_func = require('./metadata/metadata');
 const def_func = require('./definitions/definitions');
@@ -653,10 +728,11 @@ function passEvent(eventData) {
       exercise = eventData.exercise;
       jsav = exercise.jsav;
       def_func.setDefinitions(exercise);
-      if(init_state_func.someIdMissing(exercise)) {
-        init_state_func.fixMissingIds(exercise, passEvent);
-      }
-      init_state_func.setInitialDataStructures(exercise);
+      // init_state_func.fixMissingIds(exercise, passEvent);
+      // if(init_state_func.someIdMissing(exercise)) {
+      //   init_state_func.fixMissingIds(exercise, passEvent);
+      // }
+      init_state_func.setInitialDataStructures(exercise, passEvent);
       init_state_func.setAnimationHTML(exercise);
       break;
     case String(eventData.type.match(/^jsav-array-.*/)):
@@ -733,43 +809,48 @@ function finish(eventData) {
   }
 }
 
-},{"./animation/animation":1,"./definitions/definitions":10,"./initialState/initialState":13,"./metadata/metadata":14,"./rest-service/services":41,"./submission/submission":43,"./utils/helperFunctions":45}],13:[function(require,module,exports){
+},{"./animation/animation":1,"./definitions/definitions":11,"./initialState/initialState":14,"./metadata/metadata":15,"./rest-service/services":42,"./submission/submission":44,"./utils/helperFunctions":46}],14:[function(require,module,exports){
 const recorder = require('../exerciseRecorder');
 const submission = require('../submission/submission');
 const helpers = require('../utils/helperFunctions');
 const dataStructures = require('../dataStructures/dataStructures');
 
-function setInitialDataStructures(exercise) {
+function setInitialDataStructures(exercise, passEvent) {
   const initialStructures = exercise.initialStructures;
-  dataStructures.getDataStructuresFromExercise(exercise).forEach(dataStructure => {
-    submission.addInitialStateSuccesfully.dataStructure(dataStructure);
+  dataStructures.getDataStructuresFromExercise(exercise,passEvent).forEach(ds => {
+    submission.addInitialStateSuccesfully.dataStructure(ds);
   });
 }
 
-function someIdMissing(exercise) {
-  const initialStructures = exercise.initialStructures;
-  // If initialDataStructures is an Array, it means there is more than one data structure
-  if(Array.isArray(initialStructures)) {
-    initialStructures.map(ds => {
-      const htmlElement = ds.element['0'];
-      if(!htmlElement.id) return true;
-    })
-    return false;
-  }
-  return !!initialStructures.element['0'].id;
+function moreThanOneDs(initialStructures) {
+  return Array.isArray(initialStructures);
 }
 
-function fixMissingIds(exercise, passEvent) {
-  const initialStructures = exercise.initialStructures;
-  if(Array.isArray(initialStructures)) {
-    initialStructures.map(ds => {
-      const htmlElement = ds.element['0'];
-      if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
-    })
-  }
-  const htmlElement = initialStructures.element['0'];
-  if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
-}
+// function someIdMissing(exercise) {
+//   const initialStructures = exercise.initialStructures;
+//   // If initialDataStructures is an Array, it means there is more than one data structure
+//   if(Array.isArray(initialStructures)) {
+//     initialStructures.forEach(ds => {
+//       const htmlElement = ds.element['0'];
+//       if(!htmlElement.id) return true;
+//     })
+//     return false;
+//   }
+//   return !!initialStructures.element['0'].id;
+// }
+
+// function fixMissingIds(exercise, passEvent) {
+//   const initialStructures = exercise.initialStructures;
+//   if(Array.isArray(initialStructures)) {
+//     initialStructures.map(ds => {
+//       const htmlElement = ds.element['0'];
+//       if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
+//     })
+//   } else {
+//     const htmlElement = initialStructures.element['0'];
+//     if(!htmlElement.id) handleMissingId(htmlElement, passEvent);
+//   }
+// }
 
 function handleMissingId(htmlElement, passEvent) {
   tempId = `tempid-${Math.random().toString().substr(2)}`;
@@ -811,14 +892,14 @@ function setAnimationHTML(exercise) {
 }
 
 module.exports = {
-  fixMissingIds,
+  // fixMissingIds,
   setInitialDataStructures,
   setNewId,
   setAnimationHTML,
-  someIdMissing,
+  // someIdMissing,
 }
 
-},{"../dataStructures/dataStructures":7,"../exerciseRecorder":12,"../submission/submission":43,"../utils/helperFunctions":45}],14:[function(require,module,exports){
+},{"../dataStructures/dataStructures":7,"../exerciseRecorder":13,"../submission/submission":44,"../utils/helperFunctions":46}],15:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function setExerciseMetadata(metadata) {
@@ -830,9 +911,9 @@ module.exports = {
   setExerciseMetadata
 }
 
-},{"../submission/submission":43}],15:[function(require,module,exports){
+},{"../submission/submission":44}],16:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":17}],16:[function(require,module,exports){
+},{"./lib/axios":18}],17:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1014,7 +1095,7 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-},{"../core/buildFullPath":23,"../core/createError":24,"./../core/settle":28,"./../helpers/buildURL":32,"./../helpers/cookies":34,"./../helpers/isURLSameOrigin":36,"./../helpers/parseHeaders":38,"./../utils":40}],17:[function(require,module,exports){
+},{"../core/buildFullPath":24,"../core/createError":25,"./../core/settle":29,"./../helpers/buildURL":33,"./../helpers/cookies":35,"./../helpers/isURLSameOrigin":37,"./../helpers/parseHeaders":39,"./../utils":41}],18:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -1069,7 +1150,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":18,"./cancel/CancelToken":19,"./cancel/isCancel":20,"./core/Axios":21,"./core/mergeConfig":27,"./defaults":30,"./helpers/bind":31,"./helpers/spread":39,"./utils":40}],18:[function(require,module,exports){
+},{"./cancel/Cancel":19,"./cancel/CancelToken":20,"./cancel/isCancel":21,"./core/Axios":22,"./core/mergeConfig":28,"./defaults":31,"./helpers/bind":32,"./helpers/spread":40,"./utils":41}],19:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1090,7 +1171,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -1149,14 +1230,14 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":18}],20:[function(require,module,exports){
+},{"./Cancel":19}],21:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1252,7 +1333,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"../helpers/buildURL":32,"./../utils":40,"./InterceptorManager":22,"./dispatchRequest":25,"./mergeConfig":27}],22:[function(require,module,exports){
+},{"../helpers/buildURL":33,"./../utils":41,"./InterceptorManager":23,"./dispatchRequest":26,"./mergeConfig":28}],23:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1306,7 +1387,7 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":40}],23:[function(require,module,exports){
+},{"./../utils":41}],24:[function(require,module,exports){
 'use strict';
 
 var isAbsoluteURL = require('../helpers/isAbsoluteURL');
@@ -1328,7 +1409,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
   return requestedURL;
 };
 
-},{"../helpers/combineURLs":33,"../helpers/isAbsoluteURL":35}],24:[function(require,module,exports){
+},{"../helpers/combineURLs":34,"../helpers/isAbsoluteURL":36}],25:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -1348,7 +1429,7 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":26}],25:[function(require,module,exports){
+},{"./enhanceError":27}],26:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1429,7 +1510,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":20,"../defaults":30,"./../utils":40,"./transformData":29}],26:[function(require,module,exports){
+},{"../cancel/isCancel":21,"../defaults":31,"./../utils":41,"./transformData":30}],27:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1473,7 +1554,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   return error;
 };
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1548,7 +1629,7 @@ module.exports = function mergeConfig(config1, config2) {
   return config;
 };
 
-},{"../utils":40}],28:[function(require,module,exports){
+},{"../utils":41}],29:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1575,7 +1656,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":24}],29:[function(require,module,exports){
+},{"./createError":25}],30:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1597,7 +1678,7 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":40}],30:[function(require,module,exports){
+},{"./../utils":41}],31:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1698,7 +1779,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = defaults;
 
 }).call(this,require('_process'))
-},{"./adapters/http":16,"./adapters/xhr":16,"./helpers/normalizeHeaderName":37,"./utils":40,"_process":46}],31:[function(require,module,exports){
+},{"./adapters/http":17,"./adapters/xhr":17,"./helpers/normalizeHeaderName":38,"./utils":41,"_process":47}],32:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1711,7 +1792,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1784,7 +1865,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":40}],33:[function(require,module,exports){
+},{"./../utils":41}],34:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1800,7 +1881,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1855,7 +1936,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":40}],35:[function(require,module,exports){
+},{"./../utils":41}],36:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1871,7 +1952,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1941,7 +2022,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":40}],37:[function(require,module,exports){
+},{"./../utils":41}],38:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1955,7 +2036,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":40}],38:[function(require,module,exports){
+},{"../utils":41}],39:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -2010,7 +2091,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":40}],39:[function(require,module,exports){
+},{"./../utils":41}],40:[function(require,module,exports){
 'use strict';
 
 /**
@@ -2039,7 +2120,7 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
@@ -2385,7 +2466,7 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":31}],41:[function(require,module,exports){
+},{"./helpers/bind":32}],42:[function(require,module,exports){
 const axios = require('axios');
 
 async function sendSubmission(data, url) {
@@ -2409,7 +2490,7 @@ module.exports = {
   sendSubmission
 }
 
-},{"axios":15}],42:[function(require,module,exports){
+},{"axios":16}],43:[function(require,module,exports){
 // TODO: add check to avoid endless loop
 function copyObject(obj) {
   const copy = {};
@@ -2493,7 +2574,7 @@ module.exports = {
   isNumber
 }
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 const helpers = require('./helpers');
 const valid = require('./validate');
 
@@ -2726,7 +2807,7 @@ module.exports = {
   checkAndFixLastAnimationStep
 }
 
-},{"./helpers":42,"./validate":44}],44:[function(require,module,exports){
+},{"./helpers":43,"./validate":45}],45:[function(require,module,exports){
 //TODO: set all try catch statements
 
 const helpers = require('./helpers.js');
@@ -2893,7 +2974,7 @@ module.exports = {
   dsId: validateDsId,
 }
 
-},{"./helpers.js":42}],45:[function(require,module,exports){
+},{"./helpers.js":43}],46:[function(require,module,exports){
 // Takes a string containing an html element
 function extractTextByClassName(html, className){
   let text;
@@ -2972,7 +3053,7 @@ const helpers = {
 
 module.exports = helpers;
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -3158,4 +3239,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[12]);
+},{}]},{},[13]);

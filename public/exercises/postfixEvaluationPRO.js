@@ -10,14 +10,14 @@
       clickHandler,
 
       // configurations
-      config = ODSA.UTILS.loadConfig({'av_container': 'jsavcontainer'}),
-      interpret = config.interpreter,
-      code =  "1. read postfix expression token by token\n"+,
-            "2.   if the token is an operand, push it into the stack\n" +,
-            "3.   if the token is a binary operator,",
-            "3.1    pop the two top most operands from the stack",
-            "3.2    apply the binary operator with the two operands",
-            "3.3    push the result into the stack",
+      // config = ODSA.UTILS.loadConfig({'av_container': 'jsavcontainer'}),
+      // interpret = config.interpreter,
+      code =  "1. read postfix expression token by token\n"+
+            "2.   if the token is an operand, push it into the stack\n" +
+            "3.   if the token is a binary operator,\n" +
+            "3.1    pop the two top most operands from the stack\n"+
+            "3.2    apply the binary operator with the two operands\n"+
+            "3.3    push the result into the stack\n"+
             "4. finally, the value of the whole postfix expression remains in the stack",
       codeOptions = {after: {element: $(".instructions")}, visible: true, lineNumbers: false},
 
@@ -85,14 +85,14 @@
       "font-weight": "bold"
     };
     var canvasWidth = exercise.jsav.container.find(".jsavcanvas").width();
-    av.getSvg().text(canvasWidth / 2, 20, interpret("av_postfix_expression")).attr(font);
-    av.getSvg().text(canvasWidth / 2, 200, interpret("av_operand_stack")).attr(font);
+    av.getSvg().text(canvasWidth / 2, 20, "Postfix-lauseke").attr(font);
+    av.getSvg().text(canvasWidth / 2, 200, "Operand Stack").attr(font);
 
     // draw the Evaluator
     var rect_x = 50;
     var rect_y = 220;
     av.g.rect(rect_x, rect_y, 200, 120, {r: 20});
-    av.getSvg().text(rect_x + 100, rect_y + 15, interpret("av_evaluator"));
+    av.getSvg().text(rect_x + 100, rect_y + 15, "Evaluator 2.0");
 
     for (i = 0; i < 3; i++) {
       if (evaluatorArrays[i]) {
@@ -122,7 +122,7 @@
       }}
       );
 
-    return [jsavArray, evaluatorArrays[1]];
+    return [jsavArray, evaluatorArrays[1], stack];
   }
 
   function modelSolution(jsav) {
@@ -139,7 +139,7 @@
     var rect_x = 50;
     var rect_y = 100;
     jsav.g.rect(rect_x, rect_y, 200, 120, {r: 20});
-    jsav.svg.text(rect_x + 100, rect_y + 15, interpret("av_evaluator"));
+    jsav.svg.text(rect_x + 100, rect_y + 15, "Evaluator 2.0");
     var modelEvalAr = [];
     var i;
 
@@ -164,13 +164,13 @@
         modelStack.addFirst();
         jsav.effects.moveValue(modelArray, i, modelStack.first());
         modelStack.layout();
-        jsav.umsg(interpret("av_ms_com_operand"));
+        jsav.umsg("The operand goes into the operand stack.");
         jsav.stepOption("grade", true);
         jsav.step();
       } else {
         // move the operator to the evaluator
         jsav.effects.moveValue(modelArray, i, modelEvalAr[1], 0);
-        jsav.umsg(interpret("av_ms_com_operator"));
+        jsav.umsg("The operator goes into the evaluator.");
         jsav.step();
         // "run the evaluator"
         // move the first value
@@ -181,7 +181,7 @@
         jsav.effects.moveValue(modelStack.first(), modelEvalAr[2], 0);
         modelStack.removeFirst();
         modelStack.layout();
-        jsav.umsg(interpret("av_ms_com_pop"));
+        jsav.umsg("The two topmost values from the stack are popped.");
         jsav.step();
         // animate operator
         //  if ($.fx.off === false) {
@@ -198,20 +198,20 @@
         modelEvalAr[0].value(0, "");
         modelEvalAr[1].value(0, result);
         modelEvalAr[2].value(0, "");
-        jsav.umsg(interpret("av_ms_com_eval"));
+        jsav.umsg("The evaluator calculates the value.");
         jsav.stepOption("grade", true);
         jsav.step();
         // move the value back into the stack
         modelStack.addFirst();
         jsav.effects.moveValue(modelEvalAr[1], 0, modelStack.first());
         modelStack.layout();
-        jsav.umsg(interpret("av_ms_com_push"), {preserve: true});
+        jsav.umsg("<br/>And the value is pushed back onto the stack.", {preserve: true});
         jsav.stepOption("grade", true);
         jsav.step();
       }
     }
 
-    return [modelArray, modelEvalAr[1]];
+    return [modelArray, modelEvalAr[1], modelStack];
   }
 
   var exercise = av.exercise(modelSolution, initialize, {feedback: "atend", modelDialog: {width: 780}});

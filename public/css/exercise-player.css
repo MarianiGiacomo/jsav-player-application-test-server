@@ -11,6 +11,7 @@
 
 .jsavautoresize .jsavnode {
   min-width: 30px !important;
+  background-color: transparent;
 }
 
 .jsavline {
@@ -26,6 +27,12 @@
 }
 .jsavcanvas > svg {
   display: none;
+}
+.jsavcanvas > svg text {
+  display: block;
+}
+.jsavcanvas > svg rect {
+  display: block;
 }
 
 .selected {
