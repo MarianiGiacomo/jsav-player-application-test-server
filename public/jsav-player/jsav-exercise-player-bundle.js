@@ -261,6 +261,7 @@ function parseInput(input) {
   try {
     var json = typeof(input) === 'string' ? JSON.parse(input) : input
   } catch (err) {
+    console.log(input);
     throw err;
   }
   return json;
@@ -308,6 +309,7 @@ async function initialize() {
   try {
     let submission = await getSubmission();
     if(submission && Object.keys(submission).length > 0){
+      setStyles(submission);
       initializeAnimationView(submission, false);
       initializeModelAnswerView(submission);
       setClickHandlers(submission)
@@ -329,6 +331,13 @@ async function getSubmission() {
   } catch (err) {
     throw new Error(`Failed getting submission from address ${submissionUrl}: ${err}`)
   }
+}
+
+
+function setStyles(submission) {
+  submission.definitions.styles.forEach((item, i) => {
+    $(`<style>${item}</style>`).appendTo('body');
+  });
 }
 
 function initializeAnimationView(submission, detailed) {

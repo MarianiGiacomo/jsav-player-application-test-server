@@ -85,7 +85,7 @@ module.exports = {
   handleModelAnswer: modelAnswerAnimation.handleModelAnswer
 }
 
-},{"../dataStructures/dataStructures":7,"../submission/submission":46,"../utils/helperFunctions":48,"./array/array-animation":2,"./edge/edge-animation":3,"./model-answer/model-answer-animation":4,"./node/node-animation":5}],2:[function(require,module,exports){
+},{"../dataStructures/dataStructures":7,"../submission/submission":47,"../utils/helperFunctions":49,"./array/array-animation":2,"./edge/edge-animation":3,"./model-answer/model-answer-animation":4,"./node/node-animation":5}],2:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 const dataStructures = require('../../dataStructures/dataStructures');
@@ -118,7 +118,7 @@ module.exports = {
   handleArrayEvents
 }
 
-},{"../../dataStructures/dataStructures":7,"../../submission/submission":46,"../../utils/helperFunctions":48}],3:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":7,"../../submission/submission":47,"../../utils/helperFunctions":49}],3:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 const dataStructures = require('../../dataStructures/dataStructures');
@@ -152,7 +152,7 @@ module.exports = {
   handleEdgeEvents
 }
 
-},{"../../dataStructures/dataStructures":7,"../../submission/submission":46,"../../utils/helperFunctions":48}],4:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":7,"../../submission/submission":47,"../../utils/helperFunctions":49}],4:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const modelAnswerDefinitions = require("../../definitions/model-answer/model-answer-definitions.js");
 
@@ -187,7 +187,7 @@ module.exports = {
   handleModelAnswer,
 }
 
-},{"../../definitions/model-answer/model-answer-definitions.js":14,"../../submission/submission":46}],5:[function(require,module,exports){
+},{"../../definitions/model-answer/model-answer-definitions.js":14,"../../submission/submission":47}],5:[function(require,module,exports){
 const submission = require('../../submission/submission');
 const helpers = require('../../utils/helperFunctions');
 const dataStructures = require('../../dataStructures/dataStructures');
@@ -219,7 +219,7 @@ module.exports = {
   handleNodeEvents
 }
 
-},{"../../dataStructures/dataStructures":7,"../../submission/submission":46,"../../utils/helperFunctions":48}],6:[function(require,module,exports){
+},{"../../dataStructures/dataStructures":7,"../../submission/submission":47,"../../utils/helperFunctions":49}],6:[function(require,module,exports){
 function isBinaryHeap(initialStructure) {
   return Object.keys(initialStructure).includes('_tree' && '_treenodes');
 }
@@ -295,6 +295,11 @@ module.exports = {
 }
 
 },{}],7:[function(require,module,exports){
+//
+// dataStructures.js
+//
+// Support for visualizable data structures of JSAV and OpenDSA.
+
 const binaryHeap = require('./binaryHeap/binaryHeap');
 const graph = require('./graph/graph');
 const list = require('./list/list');
@@ -612,6 +617,16 @@ module.exports = {
 const helpers = require('../utils/helperFunctions');
 const submission = require('../submission/submission');
 const modelAnswer = require('./model-answer/model-answer-definitions.js');
+const style = require('./style/style-definitions.js');
+
+function setExerciseCSSStylesheets() {
+    let stylesheetsLinks = helpers.extractCSSStyleSheets();
+    try {
+      style.recordCSSStyleSheet(stylesheetsLinks);
+    } catch (error) {
+      console.warn(`Could not set exercise stylesheets: ${error.message}`);
+    }
+}
 
 function setExerciseOptions(eventData) {
   submission.addDefinitionSuccesfully.options({
@@ -620,7 +635,7 @@ function setExerciseOptions(eventData) {
   });
 }
 
-function setDefinitions(exercise) {
+function setExerciseModelAnswer(exercise) {
   try {
     modelAnswer.recordModelAnswerFunction(exercise.options.model.toString());
   } catch (error) {
@@ -660,8 +675,9 @@ function getExerciseInstructions(initialHTML) {
 
 
 module.exports = {
+  setExerciseCSSStylesheets,
   setExerciseOptions,
-  setDefinitions,
+  setExerciseModelAnswer,
   setFinalGrade,
   modelAnswer: {
     recordFunction: modelAnswer.recordModelAnswerFunction,
@@ -670,7 +686,7 @@ module.exports = {
   }
 }
 
-},{"../submission/submission":46,"../utils/helperFunctions":48,"./model-answer/model-answer-definitions.js":14}],14:[function(require,module,exports){
+},{"../submission/submission":47,"../utils/helperFunctions":49,"./model-answer/model-answer-definitions.js":14,"./style/style-definitions.js":15}],14:[function(require,module,exports){
 const submission = require('../../submission/submission');
 
 // Adds the model answer function as string
@@ -748,7 +764,36 @@ module.exports = {
   modelAnswerProgress,
 }
 
-},{"../../submission/submission":46}],15:[function(require,module,exports){
+},{"../../submission/submission":47}],15:[function(require,module,exports){
+const submission = require('../../submission/submission');
+const axios = require('axios');
+
+function recordCSSStyleSheet(stylesheetsLinks) {
+  try {
+    stylesheetsLinks.forEach( async link => {
+      const response = await fetch(link);
+      const stylesheet = await response.text();
+      submission.addDefinitionSuccesfully.style(stylesheet);
+    });
+  } catch (error) {
+    throw error;
+  }
+  return true;
+}
+
+module.exports = {
+  recordCSSStyleSheet
+}
+
+},{"../../submission/submission":47,"axios":19}],16:[function(require,module,exports){
+//
+// exerciseRecorder.js
+//
+// This is the main module of the JSAV Exercise Recorder.
+
+// Submodules of the JSAV Exercise Recorder.
+// The program code of these modules will be included in the JSAV Exercise
+// Recorder bundle file.
 const submission = require('./submission/submission');
 const metad_func = require('./metadata/metadata');
 const def_func = require('./definitions/definitions');
@@ -757,13 +802,26 @@ const anim_func = require('./animation/animation');
 const services = require('./rest-service/services');
 const helpers = require('./utils/helperFunctions');
 
+//
+// Starter code.
+//
+// This will be run when the JSAV Exercise Recorder bundle file is referred
+// by a <script> tag in a HTML document.
+
+
 let jsav = {};
 let exercise = {};
 let exerciseHTML = "";
-// LMS defines: used if grading asynchronously
+
+// Unique address for asynchronously creating a new graded submission.
+// This is defined by the A+ LMS. It is used if grading asynchronously.
+// https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
 let submission_url;
-// LMS defines: where to post the submission
+
+// A+ LMS defines: where to post the submission.
+// https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
 let post_url;
+
 const modelAnswer = {
   opened: false,
   ready: false,
@@ -773,10 +831,14 @@ Object.seal(modelAnswer);
 
 initialize();
 
+// End of starter code
+
+// Initializer function.
+// Binds events of type "jsav-log-event" to function passEvent() (see below).
 function initialize() {
   setSubmissionAndPostUrl();
   submission.reset();
-  metad_func.setExerciseMetadata(getMetadataFromURLparams())
+  metad_func.setExerciseMetadata(getMetadataFromURLparams());
   try {
     $(document).off("jsav-log-event");
     $(document).on("jsav-log-event",  function (event, eventData) {
@@ -806,18 +868,26 @@ function getMetadataFromURLparams() {
   return { max_points, uid, ordinal_number };
 }
 
+// Event handler for JSAV events.
+//
+// Parameters:
+// eventData: { type: string,
+//              exercise: JSAV exercise, ...}
 function passEvent(eventData) {
-  console.log('EVENT DATA', eventData);
   switch(eventData.type){
     case 'jsav-init':
+      def_func.setExerciseCSSStylesheets();
+      // Set exercise title and instructions
       def_func.setExerciseOptions(eventData);
       break;
     case 'jsav-recorded':
+      // All steps of a JSAV slideshow have been created.
       break;
     case 'jsav-exercise-init':
+      // JSAV exercise object created
       exercise = eventData.exercise;
       jsav = exercise.jsav;
-      def_func.setDefinitions(exercise);
+      def_func.setExerciseModelAnswer(exercise);
       // init_state_func.fixMissingIds(exercise, passEvent);
       // if(init_state_func.someIdMissing(exercise)) {
       //   init_state_func.fixMissingIds(exercise, passEvent);
@@ -826,36 +896,45 @@ function passEvent(eventData) {
       init_state_func.setAnimationHTML(exercise);
       break;
     case String(eventData.type.match(/^jsav-array-.*/)):
+      // JSAV Array data structure events.
+      // http://jsav.io/datastructures/array/
       anim_func.handleArrayEvents(exercise, eventData);
       break;
     case String(eventData.type.match(/^jsav-node-.*/)):
+      // JSAV Node data structure events
+      // http://jsav.io/datastructures/common/
       anim_func.handleNodeEvents(exercise, eventData);
       break;
     case String(eventData.type.match(/^jsav-edge-.*/)):
+      // JSAV Edge data structure events
+      // http://jsav.io/datastructures/common/
       anim_func.handleEdgeEvents(exercise, eventData);
       break;
-    // This is fired by the initialState.js if the DS ID is set only on first click
     case 'recorder-set-id':
+      // This is fired by the initialState.js if the DS ID is set only on first click
       init_state_func.setNewId(eventData);
       break;
     case 'jsav-exercise-undo':
+      // User clicks the Undo button
       setTimeout(() => anim_func.handleGradableStep(exercise, eventData), 100);
       break;
     case 'jsav-exercise-gradeable-step':
       anim_func.handleGradableStep(exercise, eventData);
       break;
     case 'jsav-exercise-model-open':
+      // User clicks the Model answer button
       modelAnswer.opened = true;
       modelAnswer.ready = true;
     case 'jsav-exercise-model-init':
-      if(!modelAnswer.opened) {
-        exercise.modelav.SPEED = modelAnswer.recordingSpeed +10;
+      if (!modelAnswer.opened) {
+        exercise.modelav.SPEED = modelAnswer.recordingSpeed + 10;
         modelAnswer.ready = !def_func.modelAnswer.recordStep(exercise);
         $('.jsavmodelanswer .jsavforward').click();
         break;
       }
     case 'jsav-exercise-model-forward':
-      if(!modelAnswer.opened && !modelAnswer.ready) {
+      // User views the animation of the model answer one step forward
+      if (!modelAnswer.opened && !modelAnswer.ready) {
         setTimeout(() => {
           modelAnswer.ready = !def_func.modelAnswer.recordStep(exercise);
           $('.jsavmodelanswer .jsavforward').click();
@@ -863,11 +942,16 @@ function passEvent(eventData) {
         break;
       }
     case String(eventData.type.match(/^jsav-exercise-model-.*/)):
-      if (modelAnswer.opened) anim_func.handleModelAnswer(exercise, eventData);
+      // All user actions with the model answer animation
+      if (modelAnswer.opened) {
+        anim_func.handleModelAnswer(exercise, eventData);
+      }
       break;
     case 'jsav-exercise-grade-button':
+      // User clicks the Grade button
       break;
     case 'jsav-exercise-grade':
+      // Automatic grading of the exercise finished
       if(!modelAnswer.opened) {
         const popUpText = `Recording model answer steps\n ${def_func.modelAnswer.progress()}`;
         const popUp = helpers.getPopUp(popUpText);
@@ -876,6 +960,7 @@ function passEvent(eventData) {
       finish(eventData);
       break;
     case 'jsav-exercise-reset':
+      // User clicks the Reset button
       console.warn('Resetting submission');
       submission.reset();
       break;
@@ -899,7 +984,7 @@ function finish(eventData) {
   }
 }
 
-},{"./animation/animation":1,"./definitions/definitions":13,"./initialState/initialState":16,"./metadata/metadata":17,"./rest-service/services":44,"./submission/submission":46,"./utils/helperFunctions":48}],16:[function(require,module,exports){
+},{"./animation/animation":1,"./definitions/definitions":13,"./initialState/initialState":17,"./metadata/metadata":18,"./rest-service/services":45,"./submission/submission":47,"./utils/helperFunctions":49}],17:[function(require,module,exports){
 const recorder = require('../exerciseRecorder');
 const submission = require('../submission/submission');
 const helpers = require('../utils/helperFunctions');
@@ -989,7 +1074,7 @@ module.exports = {
   // someIdMissing,
 }
 
-},{"../dataStructures/dataStructures":7,"../exerciseRecorder":15,"../submission/submission":46,"../utils/helperFunctions":48}],17:[function(require,module,exports){
+},{"../dataStructures/dataStructures":7,"../exerciseRecorder":16,"../submission/submission":47,"../utils/helperFunctions":49}],18:[function(require,module,exports){
 const submission = require('../submission/submission');
 
 function setExerciseMetadata(metadata) {
@@ -1001,9 +1086,9 @@ module.exports = {
   setExerciseMetadata
 }
 
-},{"../submission/submission":46}],18:[function(require,module,exports){
+},{"../submission/submission":47}],19:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":20}],19:[function(require,module,exports){
+},{"./lib/axios":21}],20:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1185,7 +1270,7 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-},{"../core/buildFullPath":26,"../core/createError":27,"./../core/settle":31,"./../helpers/buildURL":35,"./../helpers/cookies":37,"./../helpers/isURLSameOrigin":39,"./../helpers/parseHeaders":41,"./../utils":43}],20:[function(require,module,exports){
+},{"../core/buildFullPath":27,"../core/createError":28,"./../core/settle":32,"./../helpers/buildURL":36,"./../helpers/cookies":38,"./../helpers/isURLSameOrigin":40,"./../helpers/parseHeaders":42,"./../utils":44}],21:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -1240,7 +1325,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":21,"./cancel/CancelToken":22,"./cancel/isCancel":23,"./core/Axios":24,"./core/mergeConfig":30,"./defaults":33,"./helpers/bind":34,"./helpers/spread":42,"./utils":43}],21:[function(require,module,exports){
+},{"./cancel/Cancel":22,"./cancel/CancelToken":23,"./cancel/isCancel":24,"./core/Axios":25,"./core/mergeConfig":31,"./defaults":34,"./helpers/bind":35,"./helpers/spread":43,"./utils":44}],22:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1261,7 +1346,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -1320,14 +1405,14 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":21}],23:[function(require,module,exports){
+},{"./Cancel":22}],24:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1423,7 +1508,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"../helpers/buildURL":35,"./../utils":43,"./InterceptorManager":25,"./dispatchRequest":28,"./mergeConfig":30}],25:[function(require,module,exports){
+},{"../helpers/buildURL":36,"./../utils":44,"./InterceptorManager":26,"./dispatchRequest":29,"./mergeConfig":31}],26:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1477,7 +1562,7 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":43}],26:[function(require,module,exports){
+},{"./../utils":44}],27:[function(require,module,exports){
 'use strict';
 
 var isAbsoluteURL = require('../helpers/isAbsoluteURL');
@@ -1499,7 +1584,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
   return requestedURL;
 };
 
-},{"../helpers/combineURLs":36,"../helpers/isAbsoluteURL":38}],27:[function(require,module,exports){
+},{"../helpers/combineURLs":37,"../helpers/isAbsoluteURL":39}],28:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -1519,7 +1604,7 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":29}],28:[function(require,module,exports){
+},{"./enhanceError":30}],29:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1600,7 +1685,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":23,"../defaults":33,"./../utils":43,"./transformData":32}],29:[function(require,module,exports){
+},{"../cancel/isCancel":24,"../defaults":34,"./../utils":44,"./transformData":33}],30:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1644,7 +1729,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   return error;
 };
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1719,7 +1804,7 @@ module.exports = function mergeConfig(config1, config2) {
   return config;
 };
 
-},{"../utils":43}],31:[function(require,module,exports){
+},{"../utils":44}],32:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1746,7 +1831,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":27}],32:[function(require,module,exports){
+},{"./createError":28}],33:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1768,8 +1853,8 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":43}],33:[function(require,module,exports){
-(function (process){
+},{"./../utils":44}],34:[function(require,module,exports){
+(function (process){(function (){
 'use strict';
 
 var utils = require('./utils');
@@ -1868,8 +1953,8 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = defaults;
 
-}).call(this,require('_process'))
-},{"./adapters/http":19,"./adapters/xhr":19,"./helpers/normalizeHeaderName":40,"./utils":43,"_process":49}],34:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'))
+},{"./adapters/http":20,"./adapters/xhr":20,"./helpers/normalizeHeaderName":41,"./utils":44,"_process":50}],35:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1882,7 +1967,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1955,7 +2040,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":43}],36:[function(require,module,exports){
+},{"./../utils":44}],37:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1971,7 +2056,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -2026,7 +2111,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":43}],38:[function(require,module,exports){
+},{"./../utils":44}],39:[function(require,module,exports){
 'use strict';
 
 /**
@@ -2042,7 +2127,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -2112,7 +2197,7 @@ module.exports = (
     })()
 );
 
-},{"./../utils":43}],40:[function(require,module,exports){
+},{"./../utils":44}],41:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -2126,7 +2211,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":43}],41:[function(require,module,exports){
+},{"../utils":44}],42:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -2181,7 +2266,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":43}],42:[function(require,module,exports){
+},{"./../utils":44}],43:[function(require,module,exports){
 'use strict';
 
 /**
@@ -2210,7 +2295,7 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
@@ -2556,11 +2641,18 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":34}],44:[function(require,module,exports){
+},{"./helpers/bind":35}],45:[function(require,module,exports){
+//
+// services.js
+//
+// Sends JSAV exercise submission to a grader of A+ LMS.
+// https://github.com/apluslms/a-plus/blob/master/doc/GRADERS.md
+// Uses axios HTTP package: https://www.npmjs.com/package/axios
+
 const axios = require('axios');
 
 async function sendSubmission(data, url) {
-  if(url === 'window'){
+  if (url === 'window') {
     try {
       window.parent.postMessage(data, "*");
     } catch (err) {
@@ -2580,7 +2672,12 @@ module.exports = {
   sendSubmission
 }
 
-},{"axios":18}],45:[function(require,module,exports){
+},{"axios":19}],46:[function(require,module,exports){
+//
+// helpers.js
+//
+// Helper functions for
+
 // TODO: add check to avoid endless loop
 function copyObject(obj) {
   const copy = {};
@@ -2664,17 +2761,26 @@ module.exports = {
   isNumber
 }
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
+//
+// submission.js
+//
+// This module contains data structures and functions for the exercise
+// recording in JAAL format.
+//
 const helpers = require('./helpers');
 const valid = require('./validate');
 
 // TODO: set all try catch statements
 
-
+//
+// Basic structure of the exercise recording.
+// Format: JAAL (JSON Algorithm Animation Language).
+//
 const submission =  {
   metadata: {},
   definitions: {
-    style: {},
+    styles: [],
     score: {},
     options: {},
     modelAnswer: {
@@ -2695,7 +2801,7 @@ Object.seal(submission.definitions);
 function reset() {
   submission.metadata = {};
   submission.definitions = {
-    style: {},
+    styles: [],
     score: {},
     options: {},
     modelAnswer: {
@@ -2742,7 +2848,7 @@ function addMetadataSuccesfully(metadata) {
 
 function addStyle(style) {
   if (valid.style(style)) {
-    submission.definitions.style = { ...style };
+    submission.definitions.styles.push(style);
     return true;
   }
   return false;
@@ -2897,7 +3003,7 @@ module.exports = {
   checkAndFixLastAnimationStep
 }
 
-},{"./helpers":45,"./validate":47}],47:[function(require,module,exports){
+},{"./helpers":46,"./validate":48}],48:[function(require,module,exports){
 //TODO: set all try catch statements
 
 const helpers = require('./helpers.js');
@@ -3064,7 +3170,19 @@ module.exports = {
   dsId: validateDsId,
 }
 
-},{"./helpers.js":45}],48:[function(require,module,exports){
+},{"./helpers.js":46}],49:[function(require,module,exports){
+// Extracts the links of the CSS stylesheets
+function extractCSSStyleSheets(){
+  const stylesheetsLinks = [];
+  const headNodes = document.getElementsByTagName('head')[0].childNodes;
+  for ( const [key, value] of Object.entries(headNodes) ) {
+    if (value.rel === 'stylesheet') {
+      stylesheetsLinks.push(value.href)
+    }
+  }
+  return stylesheetsLinks;
+}
+
 // Takes a string containing an html element
 function extractTextByClassName(html, className){
   let text;
@@ -3135,6 +3253,7 @@ function getPopUp(text) {
 
 
 const helpers = {
+  extractCSSStyleSheets,
   extractTextByClassName,
   extractTextByTagName,
   getExerciseHTML,
@@ -3143,7 +3262,7 @@ const helpers = {
 
 module.exports = helpers;
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -3329,4 +3448,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[15]);
+},{}]},{},[16]);
