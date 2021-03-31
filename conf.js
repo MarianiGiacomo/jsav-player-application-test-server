@@ -1,4 +1,4 @@
-const MODE = "test";
+const MODE = "production";
 const exerciseServer = "https://gentle-fjord-22671.herokuapp.com";
 const testServer = "http://localhost:8000"
 const db = require("./db/db.js")
