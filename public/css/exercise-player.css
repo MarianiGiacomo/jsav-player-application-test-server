@@ -188,7 +188,5 @@ display: none;
 }
 
 #modal-content, #animation-container, #model-answer-container {
-  overflow: scroll;
-  display: flex;
-  overflow: visible; 
+  overflow: scroll; 
 }
