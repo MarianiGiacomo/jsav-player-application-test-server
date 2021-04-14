@@ -152,7 +152,7 @@ display: none;
 .modal {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
+  z-index: 111; /* Sit on top of JSAV SVG elements */
   left: 0;
   top: 0;
   width: 100%; /* Full width */
