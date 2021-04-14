@@ -162,7 +162,7 @@ display: none;
   background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
 
-.exercise-content ~ .modal {
+#myModal {
   z-index: 111; /* Sit on top of JSAV SVG */
 }
 
