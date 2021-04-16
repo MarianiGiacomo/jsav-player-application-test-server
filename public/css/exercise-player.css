@@ -163,7 +163,7 @@ display: none;
 }
 
 #myModal {
-  z-index: 111; /* Sit on top of JSAV SVG */
+  z-index: 1000; /* Sit on top of JSAV SVG displayed in the background */
 }
 
 /* Modal Content/Box */
