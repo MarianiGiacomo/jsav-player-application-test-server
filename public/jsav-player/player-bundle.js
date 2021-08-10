@@ -52,6 +52,7 @@ function initializeAnimation(initialStateHTML, animationSteps, canvas) {
     });
     $stopButton.on('click', () => {
       animation.stop();
+			$playPauseButton.text('Play')
       $playPauseButton.removeClass("pause");
       $('#to-beginning').click();
     });
@@ -165,6 +166,7 @@ function initializeAnimation(initialStateHTML, animationSteps, canvas) {
     $stopButton.on('click', () => {
       animation.stop();
       $playPauseButton.removeClass("pause");
+			$playPauseButton.text('Play')
       $('#model-answer-to-beginning').click();
     });
   } catch (err) {
