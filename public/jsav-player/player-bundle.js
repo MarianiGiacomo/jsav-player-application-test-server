@@ -40,9 +40,15 @@ function initializeAnimation(initialStateHTML, animationSteps, canvas) {
   }
   try {
     $playPauseButton.on('click', () => {
-      if(animation.isPaused()) animation.play($speedInput);
-      else animation.pause();
-      $playPauseButton.toggleClass("pause");
+      if(animation.isPaused()) { 
+				animation.play($speedInput); 
+				$playPauseButton.text('Pause')
+			}
+      else { 
+				animation.pause(); 
+				$playPauseButton.text('Play')
+				$playPauseButton.toggleClass("pause");
+			}
     });
     $stopButton.on('click', () => {
       animation.stop();
@@ -146,9 +152,15 @@ function initializeAnimation(initialStateHTML, animationSteps, canvas) {
   }
   try {
     $playPauseButton.on('click', () => {
-      if(animation.isPaused()) animation.play($speedInput);
-      else animation.pause();
-      $playPauseButton.toggleClass("pause");
+      if(animation.isPaused()) { 
+				animation.play($speedInput); 
+				$playPauseButton.text('Pause')
+			}
+      else { 
+				animation.pause(); 
+				$playPauseButton.text('Play')
+				$playPauseButton.toggleClass("pause");
+			}
     });
     $stopButton.on('click', () => {
       animation.stop();
@@ -219,85 +231,10 @@ class DOMSlideShow {
 module.exports = { DOMSlideShow }
 
 },{}],5:[function(require,module,exports){
-function jsonToHTML(input) {
-  return (show) => {
-    return (htmlToString) => {
-      const json = parseInput(input);
-      const display = show ? 'block' : 'none';
-      const repSm = /</gi;
-      const repGt = />/gi;
-      const htmlArray = [`<ul style="display:${display}">`];
-      for( let [key, value] of Object.entries(json)) {
-        if(typeof(value) === 'object' && Object.keys(value).length > 0) {
-          htmlArray.push(`<li>${key}:<span class="clickable" style="cursor: pointer">+</span>`)
-          htmlArray.push(jsonToHTML(value)(false)(htmlToString));
-        } else {
-          let content;
-          if(Array.isArray(value)) {
-            content = '[]'
-          } else if(typeof(value) === 'object') {
-            content = '{}'
-          } else {
-            const formattedContent = (typeof(value) === 'string' && htmlToString) ? value.replace(repSm, '&lt;').replace(repGt, '&gt;') : value;
-            content = getFinalContent(formattedContent);
-          }
-          htmlArray.push(`<li>${key}: ${content}</li>`)
-        }
-      }
-      htmlArray.push('</ul>')
-      return htmlArray.flat().join('');
-    }
-  }
-}
-
-function getFinalContent(formattedContent) {
-  if(formattedContent.length < 50 || typeof(formattedContent) == 'number') {
-    return `<span>${formattedContent}</span>`;
-  }
-  return `<span class="clickable" style="cursor: pointer">+</span><pre style="display:none">${formattedContent}</pre>`;
-}
-
-function parseInput(input) {
-  try {
-    var json = typeof(input) === 'string' ? JSON.parse(input) : input
-  } catch (err) {
-    console.log(input);
-    throw err;
-  }
-  return json;
-}
-
-function setClickListeners() {
-  const clickableElements = document.getElementsByClassName('clickable');
-  Array.from(clickableElements).forEach( el => {
-    el.onclick = () => {
-      const node = el.nextSibling;
-      if(node.style && node.style.display == 'none') {
-        node.style.display = 'block';
-        el.innerText = ' -'
-      } else if(node.style && node.style.display == 'block') {
-        node.style.display = 'none';
-        el.innerText = '+'
-      }
-    };
-  })
-}
-
-if(typeof(module) !== undefined) {
-  module.exports = {
-    jsonToHTML,
-    setClickListeners
-  }
-}
-
-},{}],6:[function(require,module,exports){
 const { DOMAnimation } = require('./animation/animation.js');
 const { DOMSlideShow } = require('./animation/slideShow.js');
 const animationView = require('./animation/animation-view.js');
 const modelAnswerView = require('./animation/model-answer-view.js');
-const jsonViewer = require('./json-viewer/index');
-
-// let $ = window.$;
 
 initialize();
 
@@ -314,8 +251,9 @@ async function initialize() {
       initializeModelAnswerView(submission);
       setClickHandlers(submission)
     } else {
-      console.warn('No animation data received')
-    }
+      setClickHandlers(submission)
+			$(".no-data").text('No animation data received')
+		}
   } catch (err) {
     console.warn(err)
   }
@@ -325,14 +263,15 @@ async function getSubmission() {
   try {
     const parsedUrl = new URL(window.location.href);
     const submissionUrl = parsedUrl.searchParams.get("submission");
-    const response = await fetch(submissionUrl)
-    const submission = response.json();
-    return submission;
+		if(submissionUrl) {
+			const response = await fetch(submissionUrl)
+			const submission = response.json();
+			return submission;
+		}
   } catch (err) {
     throw new Error(`Failed getting submission from address ${submissionUrl}: ${err}`)
   }
 }
-
 
 function setStyles(submission) {
   submission.definitions.styles.forEach((item, i) => {
@@ -397,26 +336,18 @@ function getModelAnswerSteps(modelAnswer) {
 }
 
 function setClickHandlers(submission) {
-  $('#compare-view-button').on('click', (event) => {
-    event.target.toggleAttribute('disabled');
-    $('#detailed-view-button').attr({'disabled': false});
-    $('.detailed-view').toggle();
-    $('.compare-view').toggle();
-    $('.model-answer-view > .view-control').toggle();
-    $('#animation-container').html('');
-    initializeAnimationView(submission,false);
-    initializeModelAnswerView(submission);
-  });
-
-  $('#detailed-view-button').on('click', (event) => {
-    event.target.toggleAttribute('disabled');
-    $('.detailed-view').toggle();
-    $('.compare-view').toggle();
-    $('.model-answer-view > .view-control').toggle();
-    $('#compare-view-button').attr({'disabled': false});
-    $('#model-answer-container').html('<h3>Model answer steps visulized during the exercise</h3>');
-    $('#animation-container').html('');
-    initializeAnimationView(submission,true);
+  $('#view-mode-button').on('click', (event) => {
+		const mode = event.target.value;
+		switch(mode){
+			case 'detailed':
+				setDetailedView();
+				break;
+			case 'compare':
+				setCompareView();
+				break;
+			default:
+				setCompareView();
+		}
   });
 
   $('#compare-view-to-beginning').on('click', () => {
@@ -436,40 +367,34 @@ function setClickHandlers(submission) {
     $('#model-answer-to-end').click();
   });
 
-  $('#compare-view-play-pause-button').on('click', () => {
-    $('#play-pause-button').click();
-    $('#model-answer-play-pause-button').click();
-  });
-  $('#compare-view-stop-button').on('click', () => {
-    $('#stop-button').click();
-    $('#model-answer-stop-button').click();
-  });
+	function setDetailedView() {	
+		const $modeButton = $('#view-mode-button');
+		$modeButton.attr({'value': 'compare'});
+		$modeButton.text('Back to comparison view');
+		toggleViews();
+    $('#model-answer-container').html('<h3>Model answer steps visulized during the exercise</h3>');
+    initializeAnimationView(submission,true);
+	}
 
-  $('#jaal').on('click', () => showJaal(submission));
-  $('#export').on('click', () => exportAnimation());
+	function setCompareView() {	
+		const $modeButton = $('#view-mode-button');
+		$modeButton.attr({'value': 'detailed'});
+		$modeButton.text('Back to comparison view');
+		toggleViews();
+    initializeAnimationView(submission,false);
+    initializeModelAnswerView(submission);
+	}
+
+	function toggleViews() {
+    $('.detailed-view').toggle();
+    $('.compare-view').toggle();
+    $('.model-answer-view > .view-control').toggle();
+    $('#animation-container').html('');
+	}
+
 }
-
-function exportAnimation() {
-  const iframe = `<iframe src=${window.location.href}</iframe>`
-  const modalContent = `Add this iframe to an HTML document to import the animation: \n${iframe}`;
-  useModal(modalContent);
-}
-
-function showJaal(submission) {
-  const modal = $('#myModal');
-  modal.css('display', 'block');
-  $('#show-jaal').on('click', () => {
-    const htmlToString = $('#html-to-string').prop('checked');
-    const modalContent = jsonViewer.jsonToHTML(submission)(true)(htmlToString);
-    $("#modal-content").html(modalContent);
-    jsonViewer.setClickListeners();
-  })
-  const close = $('.close');
-  close.on('click', () => modal.css('display', 'none'));
-}
-
 module.exports = {
   initialize
 }
 
-},{"./animation/animation-view.js":1,"./animation/animation.js":2,"./animation/model-answer-view.js":3,"./animation/slideShow.js":4,"./json-viewer/index":5}]},{},[6]);
+},{"./animation/animation-view.js":1,"./animation/animation.js":2,"./animation/model-answer-view.js":3,"./animation/slideShow.js":4}]},{},[5]);

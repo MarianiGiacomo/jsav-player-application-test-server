@@ -1,3 +1,23 @@
+body {
+	font-family: monospace;
+}
+
+header {
+	text-align: center;
+}
+
+header h1 {
+	margin: 0.5rem;
+	display: inline;
+}
+
+button {
+  margin: 0.2rem 0.2rem;
+	border-radius: 5px;
+	border-width: 1px;
+	padding: 0.3rem;
+	font-family: monospace;
+}
 #jsavcontainer {
   height: max-content;
   border: khaki 2px solid;
@@ -22,15 +42,19 @@
   min-width: 200px !important;
   margin: 5px;
 }
+
 .jsavcanvas svg, .jsavedgelabel {
   z-index: 1;
 }
+
 .jsavcanvas > svg {
   display: none;
 }
+
 .jsavcanvas > svg text {
   display: block;
 }
+
 .jsavcanvas > svg rect {
   display: block;
 }
@@ -39,14 +63,34 @@
   background-color: yellow !important;
 }
 
+.view-control {
+	display: flex;
+	justify-content: center;
+}
+
+.speed-control label {
+	margin-right: 5px;
+}
+
+.speed-control input {
+	width: 50%;
+}
+
+.view-control .auto-animation,
+.view-control .speed-control,
+.view-control .slide-show {
+	margin: auto 0.5rem;
+}
+
 .views-container {
   display: flex;
   justify-content: center;
 }
+
 .import-export, .final-grade, .jsavoutput, .player-controls, .view-control,
-.model-answer, .slide-show, .compare-view, .detailed-view {
+.model-answer, .joint-controls, .detailed-view {
   text-align: center;
-  margin: 2px;
+  margin: 0.3rem;
 }
 .jsavoutput .jsavtitle {
   margin: 5px;
@@ -64,7 +108,9 @@
 
 .animation-view, .model-answer-view {
   width: 600px;
-  border: solid 1px black;
+  border: solid 1px rgb(118,118,118);
+	border-radius: 10px;
+	border-style: dashed;
   margin: 2px;
   padding: 2px;
 }
@@ -74,63 +120,17 @@
   margin: auto;
 }
 
-button {
-  margin: 0.5%;
-}
-
-.auto-animation {
+.speed-control {
   display: flex;
   justify-content: center;
 }
 
-animation-stop {
-  border: 2px solid white;
+.heading-container {
+	text-align: center;
 }
 
-.animation-button {
-  background-color: #202020;
-  box-shadow: 2px 5px #888888;
-  width: 30px;
-  height: 30px;
-  padding: 0px;
-  cursor: pointer;
-}
-
-.animation-stop:hover {
-  background-color: #404040;
-}
-
-.animation-play-pause {
-  border-top: 15px solid transparent;
-  border-left: 30px solid #202020;
-  border-bottom: 15px solid transparent;
-  border-right: 0px;
-  background-color: transparent;
-  transition: 100ms all ease;
-}
-
-.animation-play-pause.pause {
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  border-top: 0px white;
-  border-left: 10px solid #202020;
-  border-bottom: 0px white;
-  border-right: 10px solid #202020;
-}
-
-.animation-play-pause.pause:hover {
-  background-color: transparent;
-  border-left: 10px solid #404040;
-  border-right: 10px solid #404040;
-}
-
-.animation-play-pause:hover {
-  border-color: transparent transparent transparent #404040;
-}
-
-p {
-  margin: 5px !important;
+.heading-container h2 {
+	margin: 0.5rem;
 }
 
 #model-answer path {
@@ -143,54 +143,13 @@ display: none;
 
 .no-data {
   text-align: center;
+	color: red;
 }
 
 .model-answer {
   min-height: 350px;
 }
 
-.modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  /* z-index: 1; */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0,0,0); /* Fallback color */
-  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-}
-
-#myModal {
-  z-index: 1000; /* Sit on top of JSAV SVG displayed in the background */
-}
-
-/* Modal Content/Box */
-.modal-content {
-  background-color: #fefefe;
-  margin: 15% auto; /* 15% from the top and centered */
-  padding: 20px;
-  border: 1px solid #888;
-  width: 80%; /* Could be more or less, depending on screen size */
-}
-
-/* The Close Button */
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  display: contents;
-}
-
-.close:hover,
-.close:focus {
-  color: black;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-#modal-content, #animation-container, #model-answer-container {
-  overflow: scroll; 
+#animation-container, #model-answer-container {
+  overflow: scroll;
 }
