@@ -281,6 +281,8 @@ function setStyles(submission) {
 
 function initializeAnimationView(submission, detailed) {
   const initialStateHTML = submission.initialState.animationHTML;
+	const displayScore = `${submission.definitions.score.correct}/${submission.definitions.score.total}`;
+	$(".score").text(`Score ${displayScore}`);
   const animationSteps = getAnimationSteps(submission,detailed);
   const canvas = {
     animationCanvas: $('#animation-container')[0],
